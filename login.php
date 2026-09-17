@@ -49,7 +49,7 @@
 
 
    echo "    </head>";
-   echo "    <body>";
+   echo "    <body class='login-page'>";
 
 
 

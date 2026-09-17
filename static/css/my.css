@@ -1,2 +1,565 @@
 @charset "UTF-8";
 /* CSS Document */
+
+/* Shared Bootstrap palette. Geometry and typography stay with the template. */
+:root {
+  --bs-primary: #EEBC32;
+  --bs-primary-rgb: 238, 188, 50;
+  --bs-secondary: #24638A;
+  --bs-secondary-rgb: 36, 99, 138;
+  --bs-info: #24638A;
+  --bs-info-rgb: 36, 99, 138;
+  --bs-success: #2F704B;
+  --bs-success-rgb: 47, 112, 75;
+  --bs-warning: #A94B12;
+  --bs-warning-rgb: 169, 75, 18;
+  --bs-danger: #B3261E;
+  --bs-danger-rgb: 179, 38, 30;
+  --bs-light: #FAF9F6;
+  --bs-light-rgb: 250, 249, 246;
+  --bs-dark: #252A2C;
+  --bs-dark-rgb: 37, 42, 44;
+  --bs-body-color: #252A2C;
+  --bs-body-color-rgb: 37, 42, 44;
+  --bs-body-bg: #E9E8E2;
+  --bs-body-bg-rgb: 233, 232, 226;
+  --app-muted: #565E60;
+  --app-border: #B5B8B3;
+  --app-primary-hover: #DDB02F;
+  --app-primary-active: #CCA12B;
+  --app-blue-hover: #205779;
+  --app-blue-active: #1B4A68;
+}
+
+/* Preserve the approved login treatment. */
+.login-page {
+  --login-muted: var(--app-muted);
+  --login-border: var(--app-border);
+  --login-primary-hover: var(--app-primary-hover);
+  --login-primary-active: var(--app-primary-active);
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
+}
+
+.login-page .page-header,
+.login-page .mask.bg-gradient-dark {
+  background: var(--bs-body-bg);
+}
+
+.login-page .card,
+.login-page .card-header {
+  background-color: var(--bs-light);
+}
+
+.login-page .card {
+  /* Inset separator preserves the card's existing dimensions. */
+  box-shadow: inset 0 0 0 1px var(--login-border);
+}
+
+.login-page .card-header .bg-gradient-primary {
+  background: var(--bs-dark);
+  box-shadow: none !important;
+}
+
+.login-page .input-group-outline {
+  --login-input-color: var(--login-muted);
+}
+
+.login-page .input-group-outline .form-control {
+  color: var(--bs-body-color);
+  border-color: var(--login-input-color);
+  caret-color: var(--bs-secondary);
+}
+
+.login-page .input-group.input-group-outline .form-label {
+  color: var(--login-input-color);
+}
+
+.login-page .input-group-outline.is-focused,
+.login-page .input-group-outline:focus-within {
+  --login-input-color: var(--bs-secondary);
+}
+
+.login-page .input-group-outline .form-control:focus {
+  border-color: var(--login-input-color);
+  box-shadow: inset 0 0 0 1px var(--login-input-color);
+}
+
+.login-page .input-group-outline.is-focused .form-label + .form-control,
+.login-page .input-group-outline.is-filled .form-label + .form-control {
+  border-color: var(--login-input-color) !important;
+  border-top-color: transparent !important;
+  box-shadow: inset 1px 0 var(--login-input-color), inset -1px 0 var(--login-input-color), inset 0 -1px var(--login-input-color);
+}
+
+.login-page .input-group-outline.is-focused .form-label::before,
+.login-page .input-group-outline.is-focused .form-label::after,
+.login-page .input-group-outline.is-filled .form-label::before,
+.login-page .input-group-outline.is-filled .form-label::after {
+  border-top-color: var(--login-input-color);
+  box-shadow: inset 0 1px var(--login-input-color);
+}
+
+.login-page .btn.bg-gradient-primary {
+  color: var(--bs-dark);
+  background: var(--bs-primary);
+  box-shadow: none;
+}
+
+.login-page .btn.bg-gradient-primary:hover {
+  background-color: var(--login-primary-hover);
+}
+
+.login-page .btn.bg-gradient-primary:not(:disabled):not(.disabled):active,
+.login-page .btn.bg-gradient-primary:not(:disabled):not(.disabled).active {
+  color: var(--bs-dark);
+  background-color: var(--login-primary-active);
+  opacity: 1;
+}
+
+.login-page .btn.bg-gradient-primary:disabled,
+.login-page .btn.bg-gradient-primary.disabled {
+  background-color: var(--bs-primary);
+  opacity: 0.65;
+}
+
+.login-page a:focus-visible,
+.login-page .btn:focus-visible {
+  outline: 2px solid var(--bs-secondary);
+  outline-offset: 3px;
+}
+
+.login-page .card-header a:focus-visible {
+  outline-color: var(--bs-primary);
+}
+
+.login-page .card-header a:hover {
+  background-color: var(--login-muted);
+}
+
+.login-page .loginError,
+.login-page .loginError + p {
+  color: var(--bs-danger);
+}
+
+.login-page .footer .copyright {
+  color: var(--login-muted) !important;
+}
+
+.login-page .footer a {
+  color: var(--bs-secondary) !important;
+}
+
+.login-page .footer a:hover {
+  color: var(--bs-dark) !important;
+  text-decoration: underline;
+}
+
+/* Application surfaces and text. */
+body.sb-nav-fixed {
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
+}
+
+.sb-nav-fixed :is(h1, h2, h3, h4, h5, h6, .form-label, .form-check-label) {
+  color: var(--bs-dark);
+}
+
+.sb-nav-fixed :is(.card, .card.card-plain, .card-header, .card-footer, .dropdown-menu, .modal-content, .list-group-item, .timeline-step) {
+  background-color: var(--bs-light);
+  border-color: var(--app-border);
+}
+
+.sb-nav-fixed .card {
+  box-shadow: inset 0 0 0 1px var(--app-border);
+}
+
+.sb-nav-fixed :is(.modal-header, .modal-footer, .dropdown-divider) {
+  border-color: var(--app-border);
+}
+
+.sb-nav-fixed :is(.text-muted, .text-secondary, .breadcrumb-item, .breadcrumb-item::before) {
+  color: var(--app-muted) !important;
+}
+
+.sb-nav-fixed :is(a, .btn-link, .link-primary, .text-primary) {
+  color: var(--bs-secondary);
+}
+
+.sb-nav-fixed .text-primary {
+  color: var(--bs-secondary) !important;
+}
+
+.sb-nav-fixed :is(a, .btn-link, .link-primary):hover {
+  color: var(--app-blue-active);
+}
+
+.sb-nav-fixed .footer a {
+  color: var(--bs-secondary) !important;
+}
+
+.sb-nav-fixed .footer a:hover {
+  color: var(--bs-dark) !important;
+  text-decoration: underline;
+}
+
+.sb-nav-fixed .text-gradient {
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.sb-nav-fixed :is(.text-success, .valid-feedback) { color: var(--bs-success) !important; }
+.sb-nav-fixed .text-info { color: var(--bs-info) !important; }
+.sb-nav-fixed .text-warning { color: var(--bs-warning) !important; }
+.sb-nav-fixed :is(.text-danger, .invalid-feedback) { color: var(--bs-danger) !important; }
+.sb-nav-fixed :is(.text-dark, .text-body) { color: var(--bs-dark) !important; }
+
+.sb-nav-fixed hr.horizontal {
+  background-image: none;
+  background-color: var(--app-border);
+}
+
+.sb-nav-fixed .timeline-one-side::before {
+  border-color: var(--app-border);
+}
+
+/* Map the template's semantic classes to flat Bootstrap colors. */
+.sb-nav-fixed :is(.btn-primary, .btn-outline-primary, .bg-primary, .bg-gradient-primary, .alert-primary) {
+  --app-fill: var(--bs-primary);
+  --app-ink: var(--bs-dark);
+  --app-hover: var(--app-primary-hover);
+  --app-active: var(--app-primary-active);
+}
+
+.sb-nav-fixed :is(.btn-secondary, .btn-info, .btn-outline-secondary, .btn-outline-info, .bg-secondary, .bg-info, .bg-gradient-secondary, .bg-gradient-info, .alert-secondary, .alert-info) {
+  --app-fill: var(--bs-secondary);
+  --app-ink: #FFFFFF;
+  --app-hover: var(--app-blue-hover);
+  --app-active: var(--app-blue-active);
+}
+
+.sb-nav-fixed :is(.btn-success, .btn-outline-success, .bg-success, .bg-gradient-success, .alert-success) {
+  --app-fill: var(--bs-success);
+  --app-ink: #FFFFFF;
+  --app-hover: #296342;
+  --app-active: #235438;
+}
+
+.sb-nav-fixed :is(.btn-warning, .btn-outline-warning, .bg-warning, .bg-gradient-warning, .alert-warning, .alert-warning-striped) {
+  --app-fill: var(--bs-warning);
+  --app-ink: #FFFFFF;
+  --app-hover: #954210;
+  --app-active: #7F380E;
+}
+
+.sb-nav-fixed :is(.btn-danger, .btn-outline-danger, .bg-danger, .bg-gradient-danger, .alert-danger) {
+  --app-fill: var(--bs-danger);
+  --app-ink: #FFFFFF;
+  --app-hover: #9E221A;
+  --app-active: #861D17;
+}
+
+.sb-nav-fixed :is(.btn-light, .btn-white, .btn-outline-light, .bg-light, .bg-white, .bg-gradient-light, .alert-light) {
+  --app-fill: var(--bs-light);
+  --app-ink: var(--bs-dark);
+  --app-hover: var(--bs-body-bg);
+  --app-active: var(--app-border);
+}
+
+.sb-nav-fixed :is(.btn-dark, .btn-outline-dark, .bg-dark, .bg-gradient-dark, .alert-dark) {
+  --app-fill: var(--bs-dark);
+  --app-ink: #FFFFFF;
+  --app-hover: #353C3F;
+  --app-active: #1B1F20;
+}
+
+.sb-nav-fixed :is(.bg-primary, .bg-secondary, .bg-success, .bg-info, .bg-warning, .bg-danger, .bg-light, .bg-white, .bg-dark, [class*="bg-gradient-"], .alert) {
+  background-color: var(--app-fill, var(--bs-light)) !important;
+  background-image: none !important;
+  color: var(--app-ink, var(--bs-dark));
+}
+
+.sb-nav-fixed :is([class*="shadow-"], .icon.shadow) {
+  box-shadow: none !important;
+}
+
+/* Section headers keep the same quiet treatment as the login header. */
+.sb-nav-fixed .card-header > .bg-gradient-primary,
+.sb-nav-fixed .card-header > :has(> .chart) {
+  --app-fill: var(--bs-dark);
+  --app-ink: #FFFFFF;
+}
+
+.sb-nav-fixed .icon-shape i {
+  color: inherit;
+}
+
+/* Navigation: retain the existing active state with a yellow inset marker. */
+.sb-nav-fixed .sidenav .navbar-nav .nav-link.active {
+  --app-fill: #353C3F;
+  --app-ink: #FFFFFF;
+  box-shadow: inset 3px 0 var(--bs-primary);
+}
+
+.sb-nav-fixed .sidenav .navbar-nav .nav-link:hover {
+  background-color: var(--app-muted) !important;
+}
+
+.sb-nav-fixed .navbar-blur {
+  background-color: var(--bs-light) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.sb-nav-fixed .sidenav-toggler-line {
+  background-color: var(--bs-dark);
+}
+
+.sb-nav-fixed .dropdown-item {
+  color: var(--bs-dark);
+}
+
+.sb-nav-fixed .dropdown-item:is(:hover, :focus) {
+  color: var(--bs-dark);
+  background-color: var(--bs-body-bg);
+}
+
+.sb-nav-fixed .dropdown-item:is(.active, :active) {
+  color: #FFFFFF;
+  background-color: var(--bs-secondary);
+}
+
+.sb-nav-fixed .dropdown-menu::before {
+  color: var(--bs-light);
+}
+
+/* Buttons retain their original padding, border widths, and typography. */
+.sb-nav-fixed .btn:not(.btn-link) {
+  color: var(--app-ink, var(--bs-dark)) !important;
+  background-color: var(--app-fill, var(--bs-light)) !important;
+  background-image: none;
+  border-color: var(--app-fill, var(--app-border));
+  box-shadow: none;
+}
+
+.sb-nav-fixed .btn[class*="btn-outline-"] {
+  color: var(--app-fill) !important;
+  background-color: var(--bs-light) !important;
+}
+
+.sb-nav-fixed .btn.btn-outline-primary {
+  color: var(--bs-secondary) !important;
+  border-color: var(--bs-secondary);
+}
+
+.sb-nav-fixed .btn:not(.btn-link):hover {
+  color: var(--app-ink, var(--bs-dark)) !important;
+  background-color: var(--app-hover, var(--bs-body-bg)) !important;
+  border-color: var(--app-hover, var(--app-border));
+  box-shadow: none;
+  opacity: 1;
+}
+
+.sb-nav-fixed .btn:not(.btn-link):is(:active, .active) {
+  color: var(--app-ink, var(--bs-dark)) !important;
+  background-color: var(--app-active, var(--app-border)) !important;
+  border-color: var(--app-active, var(--app-border));
+  box-shadow: none;
+  opacity: 1;
+}
+
+.sb-nav-fixed .btn:not(.btn-link):is(:disabled, .disabled),
+.sb-nav-fixed fieldset:disabled .btn {
+  opacity: 0.65;
+}
+
+/* Existing action containers distinguish TAKE, LEAVE/RETURN, and MOVE. */
+.sb-nav-fixed .action-take .btn {
+  color: var(--bs-dark) !important;
+  background-color: var(--app-fill) !important;
+  border-color: var(--app-fill);
+}
+
+.sb-nav-fixed .action-leave .btn {
+  --app-fill: var(--bs-secondary);
+  --app-ink: #FFFFFF;
+  --app-hover: var(--app-blue-hover);
+  --app-active: var(--app-blue-active);
+  color: var(--app-ink) !important;
+  background-color: var(--app-fill) !important;
+  border-color: var(--app-fill);
+}
+
+.sb-nav-fixed .action-move .btn {
+  --app-fill: var(--bs-light);
+  --app-ink: var(--bs-dark);
+  --app-hover: var(--bs-body-bg);
+  --app-active: var(--app-border);
+  box-shadow: inset 0 0 0 1px var(--app-muted);
+}
+
+.sb-nav-fixed :is(.action-take, .action-leave, .action-move) .btn:hover {
+  background-color: var(--app-hover) !important;
+}
+
+.sb-nav-fixed :is(.action-take, .action-leave, .action-move) .btn:is(:active, .active) {
+  background-color: var(--app-active) !important;
+}
+
+.sb-nav-fixed .action-move .btn:is(:hover, :active, .active) {
+  box-shadow: inset 0 0 0 1px var(--app-muted);
+}
+
+.sb-nav-fixed :is(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--bs-secondary);
+  outline-offset: 3px;
+}
+
+.sb-nav-fixed .sidenav :is(a, button):focus-visible,
+.sb-nav-fixed .alert :is(a, button):focus-visible {
+  outline-color: var(--bs-primary);
+}
+
+.sb-nav-fixed .alert :is(a, .btn-link) {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* Compact tables keep all original dimensions and status labels. */
+.sb-nav-fixed .table {
+  --bs-table-bg: var(--bs-light);
+  --bs-table-striped-bg: var(--bs-body-bg);
+  --bs-table-striped-color: var(--bs-dark);
+  --bs-table-hover-bg: var(--bs-body-bg);
+  --bs-table-hover-color: var(--bs-dark);
+  --bs-table-active-bg: var(--bs-body-bg);
+  --bs-table-active-color: var(--bs-dark);
+  color: var(--bs-dark);
+  border-color: var(--app-border);
+}
+
+.sb-nav-fixed .table :is(td, th),
+.sb-nav-fixed .table > :not(:last-child) > :last-child > * {
+  border-color: var(--app-border);
+}
+
+.sb-nav-fixed .table thead th {
+  opacity: 1 !important;
+}
+
+.sb-nav-fixed .progress {
+  background-color: var(--bs-body-bg);
+}
+
+/* Material outlined inputs, including populated and validation states. */
+.sb-nav-fixed .input-group-outline {
+  --app-input-color: var(--app-muted);
+}
+
+.sb-nav-fixed :is(.form-control, .form-select) {
+  color: var(--bs-dark);
+  background-color: var(--bs-light);
+  border-color: var(--app-input-color, var(--app-muted));
+  caret-color: var(--bs-secondary);
+}
+
+.sb-nav-fixed :is(.form-control, .form-select)::placeholder {
+  color: var(--app-muted);
+}
+
+.sb-nav-fixed :is(.form-control, .form-select):focus {
+  border-color: var(--app-input-color, var(--bs-secondary));
+  box-shadow: inset 0 0 0 1px var(--app-input-color, var(--bs-secondary));
+}
+
+.sb-nav-fixed :is(.form-control, .form-select):is(:disabled, [readonly]) {
+  background-color: var(--bs-body-bg);
+  color: var(--app-muted);
+}
+
+.sb-nav-fixed .input-group-outline:is(.is-focused, :focus-within) {
+  --app-input-color: var(--bs-secondary);
+}
+
+.sb-nav-fixed .input-group-outline:is(.is-valid, :has(.is-valid)) {
+  --app-input-color: var(--bs-success);
+}
+
+.sb-nav-fixed .input-group-outline:is(.is-invalid, :has(.is-invalid)) {
+  --app-input-color: var(--bs-danger);
+}
+
+.sb-nav-fixed .input-group.input-group-outline .form-control {
+  /* Floating labels sit behind the input in the existing Material template. */
+  background-color: transparent;
+  border-color: var(--app-input-color);
+}
+
+.sb-nav-fixed .input-group.input-group-outline .form-label,
+.sb-nav-fixed .input-group.input-group-outline:is(.is-focused, .is-filled) .form-label {
+  color: var(--app-input-color);
+}
+
+.sb-nav-fixed .input-group.input-group-outline:is(.is-focused, .is-filled) .form-label + .form-control {
+  border-color: var(--app-input-color) !important;
+  border-top-color: transparent !important;
+  box-shadow: inset 1px 0 var(--app-input-color), inset -1px 0 var(--app-input-color), inset 0 -1px var(--app-input-color);
+}
+
+.sb-nav-fixed .input-group.input-group-outline:is(.is-focused, .is-filled) .form-label::before,
+.sb-nav-fixed .input-group.input-group-outline:is(.is-focused, .is-filled) .form-label::after {
+  border-top-color: var(--app-input-color);
+  box-shadow: inset 0 1px var(--app-input-color);
+}
+
+.sb-nav-fixed .form-control.is-invalid,
+.sb-nav-fixed .input-group-outline.is-invalid .form-control {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23B3261E' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23B3261E' stroke='none'/%3e%3c/svg%3e");
+}
+
+.sb-nav-fixed .form-control.is-valid,
+.sb-nav-fixed .input-group-outline.is-valid .form-control {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 8'%3e%3cpath fill='%232F704B' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+}
+
+.sb-nav-fixed .form-check-input {
+  border-color: var(--app-muted);
+  background-color: var(--bs-light);
+}
+
+.sb-nav-fixed .form-check-input:checked,
+.sb-nav-fixed .form-check:not(.form-switch) .form-check-input:checked {
+  background-color: var(--bs-secondary);
+  border-color: var(--bs-secondary);
+  background-image: none;
+}
+
+.sb-nav-fixed .form-check:not(.form-switch) .form-check-input[type="checkbox"] {
+  border-color: var(--app-muted);
+}
+
+.sb-nav-fixed .form-check:not(.form-switch) .form-check-input[type="checkbox"]:checked {
+  border-color: var(--bs-secondary);
+  background: var(--bs-secondary) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m4 8 3 3 5-6'/%3e%3c/svg%3e") center / contain no-repeat;
+}
+
+.sb-nav-fixed .form-check:not(.form-switch) .form-check-input[type="checkbox"]::after {
+  color: transparent;
+}
+
+.sb-nav-fixed .form-check:not(.form-switch) .form-check-input[type="radio"]::after {
+  background: var(--bs-secondary);
+}
+
+.sb-nav-fixed .form-check-input:focus {
+  border-color: var(--bs-secondary);
+  box-shadow: 0 0 0 2px var(--bs-light), 0 0 0 4px var(--bs-secondary);
+}
+
+.sb-nav-fixed .form-check-input:checked::after {
+  border-color: #FFFFFF;
+}
+
+.sb-nav-fixed .form-switch .form-check-input::after {
+  background-color: var(--bs-light);
+}
