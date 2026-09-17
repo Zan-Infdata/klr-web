@@ -1,0 +1,469 @@
+; ------------
+; PHP Klr Web
+; @author ZP
+; @date   19.03.2025
+; English language file
+; ------------
+
+[general]
+qrcode = QR code
+srch = Serach...
+notclsd = Not closed...
+notchckd = Not reviewed...
+
+[onoff]
+swon = on
+swoff = off
+
+swy = yes
+swn = no
+
+swyupper = YES
+swnupper = NO
+
+
+[format]
+date = m/d/Y
+datetime = m/d/Y H:i:s
+time = H:i:s
+dec = .
+sep = ,
+curr = USD
+
+
+
+
+
+[pagination]
+pfx = zapisi:
+sep = do
+pst = :: skupaj
+
+
+
+
+
+[home]
+ttl = KlrWeb
+
+
+
+
+
+[login]
+ttl = KlrWeb System
+subttl = LOG IN
+usrL = username
+pwdL = password
+usrPh = username
+pwdPh = password
+
+logB = Login
+
+errTtl = Napaka:
+
+errMsg1 = System Error 
+errMsg2 = Error using credentials
+errMsg3 = Error using credentials
+errMsg4 = Missing parameters
+errMsg5 = check your email to reset password
+errMsg6 = E-mail is NOT registered in the system
+
+
+
+
+
+[footer]
+copyright = KlrWEB 2025
+
+
+
+
+[page]
+ttl = KlrWEB
+
+topSrchPH = Search...
+
+topMenu91 = User Account
+topMenu92 = Logout
+
+
+sideGroup1 = CORE
+sideMenu10 = Dashboard
+
+
+sideGroup2 = SISTEM
+sideMenu20 = Users
+sideMenu21 = Equipment
+sideMenu21sub01 = Master Data
+sideMenu21sub02 = Equipment Type
+sideMenu21sub03 = Vendor
+sideMenu21sub04 = Countries
+sideMenu21sub05 = Size
+
+sideMenu22 = Maintenance
+sideMenu22sub01 = Damage
+sideMenu22sub02 = Damage Type
+
+sideMenu23 = Customers
+sideMenu23sub01 = Master Data
+sideMenu23sub02 = User
+sideMenu23sub03 = Device
+sideMenu23sub04 = Device Type
+
+sideMenu24 = Vendors
+sideMenu24sub01 = Master Data
+sideMenu24sub02 = Vendor Type
+
+sideGroup3 = WORK ORDERS
+
+sideMenu31 = New WO
+sideMenu32 = WO Overview
+sideMenu33 = Reporting
+
+logInAs = Logged as: 
+
+
+[mdarticle]
+col01 = ID
+col02 = code
+col03 = type
+col04 = organisation
+col05 = active
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = NFC:
+lab05 = TYPE:
+lab06 = OWNER:
+lab07 = ORGANISATION:
+lab08 = ACCOUNT:
+lab09 = SIZE:
+lab10 = CUSTOM SIZE:
+lab11 = YEAR AND MONTH:
+
+new = New article
+
+checkUpdate = Are you sure you want to change this article?
+checkAdd = Are you sure you want to add this article?
+nameError = Field is empty or longer than 25 characters
+
+inputError1 = Field mustn't be empty
+inputError2 = Choose a customer
+inputError3 = Choose an article type
+inputError4 = Choose a size
+
+
+
+[mdarttype]
+col01 = ID
+col02 = code
+col03 = name
+col04 = textile
+col05 = vendor
+col06 = active
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = DESCRIPTION:
+lab05 = VENDOR:
+lab06 = TEXTILE:
+
+new = New article type
+
+checkUpdate = Are you sure you want to change this article type?
+checkAdd = Are you sure you want to add this article type?
+nameError = Field is empty or longer than 25 characters
+
+inputError1 = Field mustn't be empty
+inputError2 = Choose a vendor
+inputError3 = Choose the textile
+
+
+
+[mdvendor]
+ttl = Vendor
+
+col01 = ID
+col02 = code
+col03 = name
+col04 = country
+col05 = active
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = NAME:
+lab05 = COUNTRY:
+lab06 = IS ACTIVE:
+
+
+checkUpdate = Are you sure you want to change this vendor?
+checkAdd = Are you sure you want to add this vendor?
+inputError1 = Field mustn't be empty
+
+
+[mdcntry]
+ttl = Country
+
+col01 = ID
+col02 = code
+col03 = name
+col04 = prefix
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = NAME:
+lab05 = PREFIX ISO A2:
+lab06 = PREFIX ISO A3:
+
+
+checkUpdate = Are you sure you want to change this country?
+checkAdd = Are you sure you want to add this country?
+inputError1 = Field mustn't be empty
+inputError2 = Please input two characters
+inputError3 = Please input three characters
+
+
+[mdsize]
+ttl = Size
+
+col01 = ID
+col02 = code
+col03 = height/waist/chest
+col04 = Bristol
+col05 = Rosenbauer 1
+col06 = Rosenbauer 2
+col07 = SGARD
+col08 = active
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = DESCRIPTION:
+lab05 = HEIGNT:
+lab06 = WAIST:
+lab07 = CHEST:
+lab08 = BRISTOL:
+lab09 = ROSENBAUER 1:
+lab10 = ROSENBAUER 2:
+lab11 = SGARD:
+lab12 = IS ACTIVE:
+
+
+checkUpdate = Are you sure you want to change this size?
+checkAdd = Are you sure you want to add this size?
+inputError = Field mustn't be empty
+
+
+[mddmg]
+ttl = Damage
+
+col01 = ID
+col02 = code
+col03 = name
+col04 = type
+col05 = active
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = NAME ENG:
+lab05 = DAMAGE TYPE:
+lab06 = IS ACTIVE:
+lab07 = NAME SLO:
+
+
+checkUpdate = Are you sure you want to change this damage?
+checkAdd = Are you sure you want to add this damage?
+inputError = Field mustn't be empty
+
+
+[mddmgtype]
+ttl = Damage type
+
+col01 = ID
+col02 = code
+col03 = name
+col04 = textile group
+col05 = active
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = NAME ENG:
+lab05 = TEXTILE GROUP:
+lab06 = IS ACTIVE:
+lab07 = NAME SLO:
+
+
+checkUpdate = Are you sure you want to change this damage type?
+checkAdd = Are you sure you want to add this damage type?
+inputError = Field mustn't be empty
+
+
+
+[mdcustomer]
+ttl = Customer
+
+col01 = ID
+col02 = code
+col03 = name
+col04 = prefix
+col05 = article count
+col06 = VAT ID
+col07 = active
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = NAME:
+lab05 = CONTACT:
+lab06 = ADDRESS:
+lab07 = ZIP:
+lab08 = COUNTRY:
+lab09 = VAT ID:
+lab10 = PAYS VAT:
+lab11 = E-MAIL:
+lab12 = GSM:
+lab13 = CONTRACT:
+lab14 = IS ACTIVE:
+lab15 = PREFIX:
+lab16 = ARTICLE COUNT:
+
+checkUpdate = Are you sure you want to change this article type?
+checkAdd = Are you sure you want to add this article type?
+inputError = Field mustn't be empty
+
+
+
+[mdsvcvnd]
+ttl = Service vendor
+
+col01 = ID
+col02 = code
+col03 = name
+col04 = city
+col05 = country
+col06 = VAT ID
+col07 = active
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = NAME:
+lab05 = TYPE:
+lab06 = CONTACT PRESON:
+lab07 = E-MAIL:
+lab08 = ADDRESS:
+lab09 = ZIP:
+lab10 = COUNTRY:
+lab11 = PAYS VAT:
+lab12 = VAT ID:
+lab13 = IS ACTIVE:
+
+checkUpdate = Are you sure you want to change this service vendor?
+checkAdd = Are you sure you want to add this service vendor?
+inputError = Field mustn't be empty
+
+
+[mdsvcvndtype]
+ttl = Vendor type
+
+col01 = ID
+col02 = code
+col03 = name
+col04 = active
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = CODE:
+lab04 = NAME:
+lab05 = IS ACTIVE:
+
+
+checkUpdate = Are you sure you want to change this service vendor type?
+checkAdd = Are you sure you want to add this service vendor type?
+inputError = Field mustn't be empty
+
+[two]
+col01 = ID
+col02 = order
+col03 = article
+col04 = date in
+col05 = date out
+col06 = status
+swtch = show closed
+
+lab01 = ARTICLE UUID:
+lab02 = UUID:
+lab03 = CUSTOMER:
+lab04 = OWNER:
+lab05 = CODE:
+lab06 = DATE IN:
+lab07 = DATE OUT:
+lab08 = ORDER:
+lab09 = ID:
+lab10 = CLEANING:
+lab11 = IMPREGNATION:
+lab12 = INTENSE CLEANING:
+lab13 = SEWING:
+lab14 = EQUIPMENT IS FLAWLESS AND READY FOR USE:
+lab15 = REVIEWED BY:
+lab16 = REVIEW DATE:
+lab17 = ARTICLE CODE:
+lab18 = STATUS:
+lab19 = OPENED:
+
+imgFront = Front side
+imgBack = Back side
+
+tab01 = Work order
+tab02 = Work order items
+tab03 = Notes
+
+
+
+
+new = New work order
+
+checkUpdate = Are you sure you want to update this work order?
+checkFinish = Are you sure you want to finish this work order?
+checkAdd = Are you sure you want to add this work order?
+inputError1 = Field mustn't be empty
+existsError1 = "There is already an open work order for this article!"
+
+
+[twordystatus]
+rdy_err1 = ERROR 1
+rdy_err2 = ERROR 2
+rdy_err3 = ERROR 3
+rdy_err_cust = CUSTOM
+
+[twoitem]
+
+lab01 = DAMAGE:
+lab02 = NOTES:
+lab03 = DRAW:
+
+[buttons]
+saveButton0 = Save
+saveButton1 = Save changes
+cancelButton0 = Cancel
+addButton0 = Add new
+addButton1 = Open new
+confirmButton0 = Ok
+finishButton0 = Check
+
+
+[ajax]
+alrt0 = Request successful.
+alrt1 = ERROR: ACL clearance test. Your profile has no rights for this request.
+alrt2 = WARNING: Request was not successful - record is not updated
+alrt3 = WARNING: Request was not successful - record is not inserted
+alrt4 = WARNING: No update entity found
+alrt9 = ERROR: Request without parameters.
+alrtX = ERROR: Request process not successfull:

@@ -1,0 +1,502 @@
+; ------------
+; PHP Klr Web
+; @author ZP
+; @date   19.03.2025
+; Slovenian language file
+; ------------
+
+[general]
+qrcode = QR koda
+srch = Išči...
+notclsd = Ni zaključeno...
+notchckd = Ni pregledano...
+
+[onoff]
+swon = vključeno
+swoff = izključeno
+
+swy = da
+swn = ne
+
+swyupper = DA
+swnupper = NE
+
+
+
+
+[format]
+date = j. n. Y
+datetime = j.n.Y H:i:s
+time = H:i:s
+dec = ,
+sep = .
+curr = EUR
+
+
+
+[pagination]
+pfx = zapisi:
+sep = do
+pst = :: skupaj
+
+
+
+
+
+[home]
+ttl = KlrWeb
+
+
+
+
+
+[login]
+ttl = KlrWeb Sistem
+subttl = Prijava v sistem
+usrL = uporabnik
+pwdL = geslo
+usrPh = uporabniško ime
+pwdPh = geslo
+
+logB = Prijava
+
+errTtl = Napaka:
+
+errMsg1 = Sistemska napaka
+errMsg2 = Napaka pri prijavi
+errMsg3 = Napaka pri prijavi
+errMsg4 = Prijava brez parametrov
+errMsg5 = Preverite vaš e-mail za novo geslo
+errMsg6 = E-mail NI registriran v sistemu
+
+
+
+
+
+[footer]
+copyright = KlrWEB 2025
+
+
+
+
+[page]
+ttl = KlrWEB
+
+topSrchPH = Išči...
+
+topMenu91 = Uporabniški račun
+topMenu92 = Odjava
+
+
+sideGroup1 = OSNOVA
+sideMenu10 = Nadzorna plošča
+
+sideGroup2 = SISTEM
+sideMenu20 = Uporabniki
+sideMenu21 = Oprema
+sideMenu21sub01 = Šifrant
+sideMenu21sub02 = Vrsta opreme
+sideMenu21sub03 = Proizvajalci
+sideMenu21sub04 = Države
+sideMenu21sub05 = Velikosti
+
+sideMenu22 = Obdelava
+sideMenu22sub01 = Poškodbe
+sideMenu22sub02 = Vrsta poškodbe
+
+sideMenu23 = Stranke
+sideMenu23sub01 = Šifrant
+sideMenu23sub02 = Uporabnik
+sideMenu23sub03 = Naprave
+sideMenu23sub04 = Vrsta naprave
+
+sideMenu24 = Izvajalci
+sideMenu24sub01 = Šifranti
+sideMenu24sub02 = Vrste izvajalcev
+
+sideGroup3 = DELOVNI NALOGI
+
+sideMenu31 = Nov DN
+sideMenu32 = Pregled DN
+sideMenu33 = Poročanje
+
+
+logInAs = Prijavljen kot: 
+
+
+
+[mdarticle]
+col01 = ID
+col02 = koda
+col03 = tip
+col04 = organizacija
+col05 = aktivno
+
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = NFC:
+lab05 = TIP:
+lab06 = LASTNIK:
+lab07 = ORGANIZACIJA:
+lab08 = RAČUN:
+lab09 = VELIKOST:
+lab10 = LASTNE MERE:
+lab11 = LETO IN MESEC:
+lab12 = JE AKTIVEN:
+
+new = Nova oprema
+
+checkUpdate = Ali ste prepričani, da želite posodobiti opremo? 
+checkAdd = Ali ste prepričani, da želite dodati opremo? 
+nameError = Polje ne sme biti prazno ali daljše od 25 znakov
+
+inputError1 = Polje ne sme biti prazno
+inputError2 = Izberite organizacijo
+inputError3 = Izberite tip artikla
+inputError4 = Izberite velikost
+
+
+
+
+[mdarttype]
+col01 = ID
+col02 = koda
+col03 = ime
+col04 = tekstilja
+col05 = proizvajalec
+col06 = aktivno
+
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = OPIS:
+lab05 = PROIZVAJALEC:
+lab06 = TEKSTILIJA:
+
+new = Nova vrsta opreme
+
+checkUpdate = Ali ste prepričani, da želite posodobiti vrsto opreme? 
+checkAdd = Ali ste prepričani, da želite dodati vrsto opreme? 
+
+nameError = Polje ne sme biti prazno ali daljše od 25 znakov
+inputError1 = Polje ne sme biti prazno
+inputError2 = Izberite proizvajalca
+inputError3 = Izberite tekstiljo
+
+
+
+[mdvendor]
+ttl = Proizvajalec
+
+col01 = ID
+col02 = koda
+col03 = ime
+col04 = država
+col05 = aktivno
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = IME:
+lab05 = DRŽAVA:
+lab06 = JE AKTIVEN:
+
+
+checkUpdate = Ali ste prepričani, da želite posodobiti proizvajalca? 
+checkAdd = Ali ste prepričani, da želite dodati proizvajalca? 
+inputError1 = Polje ne sme biti prazno
+
+[mdcntry]
+ttl = Država
+
+col01 = ID
+col02 = koda
+col03 = ime
+col04 = kratica
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = IME:
+lab05 = KRATICA ISO A2:
+lab06 = KRATICA ISO A3:
+
+
+checkUpdate = Ali ste prepričani, da želite posodobiti državo? 
+checkAdd = Ali ste prepričani, da želite dodati državo? 
+inputError1 = Polje ne sme biti prazno
+inputError2 = Polje mora vsebovati dva znaka
+inputError3 = Polje mora vseboati tri znake
+
+
+[mdsize]
+ttl = Velikost
+
+col01 = ID
+col02 = koda
+col03 = višina/pas/prsni koš
+col04 = Bristol
+col05 = Rosenbauer 1
+col06 = Rosenbauer 2
+col07 = SGARD
+col08 = je aktiven
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = OPIS:
+lab05 = VIŠINA:
+lab06 = PAS:
+lab07 = PRSNI KOŠ:
+lab08 = BRISTOL:
+lab09 = ROSENBAUER 1:
+lab10 = ROSENBAUER 2:
+lab11 = SGARD:
+lab12 = JE AKTIVEN:
+
+
+checkUpdate = Ali ste prepričani, da želite posodobiti velikos? 
+checkAdd = Ali ste prepričani, da želite dodati velikost? 
+inputError = Polje ne sme biti prazno
+
+
+
+[mddmg]
+ttl = Poškodba
+
+col01 = ID
+col02 = koda
+col03 = ime
+col04 = tip
+col05 = aktivno
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = IME ANG:
+lab05 = TIP POŠKODBE:
+lab06 = JE AKTIVEN:
+lab07 = IME SLO:
+
+
+checkUpdate = Ali ste prepričani, da želite posodobiti poškodbo? 
+checkAdd = Ali ste prepričani, da želite dodati poškodbo? 
+inputError = Polje ne sme biti prazno
+
+
+
+[mddmgtype]
+ttl = Vrsta poškodbe
+
+col01 = ID
+col02 = koda
+col03 = ime
+col04 = vrsta tekstilje
+col05 = aktivno
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = IME ANG:
+lab05 = VRSTA TEKSTILJE:
+lab06 = JE AKTIVEN:
+lab07 = IME SLO:
+
+
+checkUpdate = Ali ste prepričani, da želite posodobiti vrsto poškodbe? 
+checkAdd = Ali ste prepričani, da želite dodati vrsto poškodbe? 
+inputError = Polje ne sme biti prazno
+
+
+[mdcustomer]
+ttl = Stranka
+
+col01 = ID
+col02 = koda
+col03 = ime
+col04 = kratica
+col05 = kosi opreme
+col06 = DDV ID
+col07 = aktivno
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = IME:
+lab05 = KONTAKT:
+lab06 = NASLOV:
+lab07 = POŠTA:
+lab08 = DRŽAVA:
+lab09 = DDV ID:
+lab10 = DAVČNI ZAVEZANEC:
+lab11 = E-POŠTA:
+lab12 = GSM:
+lab13 = POGODBA:
+lab14 = JE AKTIVEN:
+lab15 = KRATICA:
+lab16 = KOSI OPREME:
+
+checkUpdate = Ali ste prepričani, da želite posodobiti stranko? 
+checkAdd = Ali ste prepričani, da želite dodati stranko? 
+inputError = Polje ne sme biti prazno
+
+
+[mdsvcvnd]
+ttl = Ponudnik
+
+col01 = ID
+col02 = koda
+col03 = ime
+col04 = mesto
+col05 = država
+col06 = DDV ID
+col07 = aktivno
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = IME:
+lab05 = TIP:
+lab06 = KONTAKTNA OSEBA:
+lab07 = E-POŠTA:
+lab08 = NASLOV:
+lab09 = POŠTA:
+lab10 = DRŽAVA:
+lab11 = DAVČNI ZAVEZANEC:
+lab12 = DDV ID:
+lab13 = JE AKTIVEN:
+
+
+checkUpdate = Ali ste prepričani, da želite posodobiti izvajalca? 
+checkAdd = Ali ste prepričani, da želite dodati izvajalca? 
+inputError = Polje ne sme biti prazno
+
+
+[mdsvcvndtype]
+ttl = Vrsta ponudnika
+
+col01 = ID
+col02 = koda
+col03 = ime
+col04 = aktivno
+
+lab01 = ID:
+lab02 = UUID:
+lab03 = KODA:
+lab04 = IME:
+lab05 = JE AKTIVEN:
+
+
+checkUpdate = Ali ste prepričani, da želite posodobiti vrsto izvajalca? 
+checkAdd = Ali ste prepričani, da želite dodati vrsto izvajalca? 
+inputError = Polje ne sme biti prazno
+
+[two]
+col01 = ID
+col02 = naročilo
+col03 = artikel
+col04 = datum sprjejema
+col05 = datum izdaje
+col06 = stanje
+swtch = prikaži zaprte
+
+lab01 = UUID ARTIKLA:
+lab02 = UUID:
+lab03 = ORGANIZACIJA:
+lab04 = LASTNIK:
+lab05 = KODA:
+lab06 = SPREJETO:
+lab07 = ZAKLJUČENO:
+lab08 = NAROČILO:
+lab09 = ID:
+lab10 = NEGA:
+lab11 = IMPREGNACIA:
+lab12 = NEGA ZAHTEVNA:
+lab13 = ŠIVANJE:
+lab14 = OBLAČILO JE BREZHIBNO IN PRIPRAVLJENO ZA UPORABO:
+lab15 = PREGLEDAL:
+lab16 = DATUM PREGLEDA:
+lab17 = KODA ARTIKLA:
+lab18 = STATUS:
+lab19 = ODPRL:
+
+
+imgFront = Sprednja stran
+imgBack = Zadnja stran
+
+tab01 = Delovni nalog
+tab02 = Delo na obleki
+tab03 = Opombe
+
+
+new = Nov delovni nalog
+
+checkUpdate = Ali ste prepričani, da želite posodobiti delovni nalog?
+checkFinish = Ali ste prepričani, da želite zaključiti delovni nalog? 
+checkAdd = Ali ste prepričani, da želite dodati delovni nalog? 
+inputError1 = Polje ne sme biti prazno
+existsError1 = "Za izbrani artikel je delovni nalog že odprt!"
+
+[twordystatus]
+
+rdy_err1 = ERROR 1
+rdy_err2 = ERROR 2
+rdy_err3 = ERROR 3
+rdy_err_cust = DRUGO
+
+[twoitem]
+
+lab01 = POŠKODBA:
+lab02 = OPOMBA:
+lab03 = RIŠI:
+
+
+
+[buttons]
+saveButton0 = Shrani
+saveButton1 = Shrani spremembe
+cancelButton0 = Prekliči
+addButton0 = Dodaj
+addButton1 = Odpri
+confirmButton0 = Vredu
+finishButton0 = Preglej
+
+
+[ajax]
+alrt0 = Zahteva je uspešno izvedena.
+alrt1 = NAPAKA: Avtorizacija ni uspešna. Vaš profil nima pravice za izvedbo te zahteve.
+alrt2 = OPOZORILO: Zahteva se ni izvedla uspešno - podatki niso posodobljeni
+alrt3 = NAPAKA: Zahteva se ni izvedla uspešno, podatki niso zavedeni - kontaktirajte tehnično pomoč.
+alrt4 = OPOZORILO: Sistem ni našel elementa za posodobitev
+alrt9 = NAPAKA: Klic ni zaznal ustreznih parametrov.
+alrtX = NAPAKA: Izvedba zahteve ni uspešna:
+
+
+[pdf.wo]
+blank = /
+
+cell0_00 = Lastnik opreme:
+cell0_01 = Uporabnik opreme:
+cell0_02 = Datum sprejema:
+cell0_03 = Datum izdaje:
+cell0_04 = Koda naročila:
+cell0_05 = BAR/QR koda:
+
+
+cell1_00 = #
+cell1_01 = VRSTA POŠKODBE
+cell1_02 = DA
+cell1_03 = ŠIV.
+cell1_04 = opombe
+
+
+cell2_00 = PRANJE
+cell2_01 = IMPREGNACIJA
+cell2_02 = SUŠENJE
+cell2_03 = ŠIVANJE
+cell2_04 = ZAŠČITNA OPREMA JE BREZHIBNO PRIPRAVLJENA ZA UPORABO:
+cell2_05 = Datum pregleda:
+cell2_06 = Pregledal:
