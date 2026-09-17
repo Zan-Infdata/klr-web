@@ -76,6 +76,7 @@ echo "                 const code = data.CODE; ";
 echo "                 const selectData = data.DATA; ";
 echo "                 if(code == 200){ ";
 echo "                     generateSelectOptions(selectData, 'wrh-inp'); ";
+echo "                     $('#wrh-inp').each(function() { $(this).closest('.input-group-outline').toggleClass('is-filled', this.value !== ''); }); ";
 echo "                 } ";
 echo "                 else if(code == 401){ ";
 echo "                     redirectToLogin(); ";
@@ -164,6 +165,8 @@ echo "   $('#desc-inp').val(data.desc); ";
 echo "   $('#isActive-inp').prop('checked', data.isActive == 1); ";
 
 echo "   $('#wrh-inp').val(data.parentId); ";
+
+echo "   $('#code-inp, #name-inp, #desc-inp, #wrh-inp').each(function() { $(this).closest('.input-group-outline').toggleClass('is-filled', this.value !== ''); }); ";
 
 echo " }";
 
