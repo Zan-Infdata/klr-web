@@ -10,6 +10,13 @@
 
     namespace klr;
 
+	$config = parse_ini_file(__DIR__ . '/web.conf', true);
+
+	define(
+		__NAMESPACE__ . '\\CONFIG',
+		$config
+	);
+
 
 	class Environment {
 
@@ -18,7 +25,7 @@
 
 		//const SRVR_URL = 'https://klrweb.infdata.com';
 		//const ROOT_URL = "";
-		const SRVR_URL = 'http://klrweb.test';
+		const SRVR_URL = CONFIG["server_url"];
 		const ROOT_URL = "";
 
 		const STATIC_URL = self::SRVR_URL.self::ROOT_URL."/static/";
@@ -940,7 +947,7 @@
 	class APIManager {
 
 
-		const API_URL = "http://klrapi.test/";
+		const API_URL = CONFIG["api_url"];
 		//const API_URL = "https://klrapi.infdata.com/";
 
 		const CALL_ENDPOINT = "call";
