@@ -23,8 +23,6 @@
 
 		const DEBUG = true;
 
-		//const SRVR_URL = 'https://klrweb.infdata.com';
-		//const ROOT_URL = "";
 		const SRVR_URL = CONFIG["server_url"];
 		const ROOT_URL = "";
 
@@ -948,7 +946,6 @@
 
 
 		const API_URL = CONFIG["api_url"];
-		//const API_URL = "https://klrapi.infdata.com/";
 
 		const CALL_ENDPOINT = "call";
 		const PROTECTED_ENDPOINT = "protected";
