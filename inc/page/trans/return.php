@@ -67,7 +67,7 @@ echo "       method: 'POST', ";
 echo "       data: { req: req }, ";
 echo "       dataType: 'json', ";
 echo "       success: function(response) { ";
-echo "           const code = data.CODE; ";
+echo "           const code = response.CODE; ";
 echo "           if(code == 401){ ";
 echo "               redirectToLogin(); ";
 echo "           } ";

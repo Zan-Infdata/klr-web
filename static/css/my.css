@@ -563,3 +563,111 @@ body.sb-nav-fixed {
 .sb-nav-fixed .form-switch .form-check-input::after {
   background-color: var(--bs-light);
 }
+
+/* Equipment searches keep distinct backgrounds in every interactive state. */
+.sb-nav-fixed .equipment-list-filters :is(#eq-filter-uuid, #eq-filter-name) {
+  color: var(--bs-dark);
+  background-color: var(--eq-filter-background);
+  border: 1px solid var(--app-muted);
+}
+
+.sb-nav-fixed .equipment-list-filters #eq-filter-uuid {
+  --eq-filter-background: #FFF4CC;
+}
+
+.sb-nav-fixed .equipment-list-filters #eq-filter-name {
+  --eq-filter-background: #FFFFFF;
+}
+
+.sb-nav-fixed .equipment-list-filters :is(#eq-filter-uuid, #eq-filter-name):focus {
+  border-color: var(--bs-secondary);
+  box-shadow: inset 0 0 0 1px var(--bs-secondary);
+}
+
+/* Equipment layout: separate locations with transports grouped inside them. */
+.equipment-layout .layout-location > .card-header {
+  background-color: var(--bs-dark);
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.equipment-layout .layout-location-name,
+.equipment-layout .layout-eyebrow {
+  color: #FFFFFF;
+}
+
+.equipment-layout .layout-eyebrow {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.equipment-layout .layout-location-code.text-secondary {
+  color: var(--bs-body-bg) !important;
+}
+
+.equipment-layout .layout-location-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 2.25rem;
+  height: 2.25rem;
+  color: var(--bs-dark);
+  background-color: var(--bs-primary);
+  border-radius: 0.5rem;
+}
+
+.equipment-layout .layout-location > .card-body > .layout-equipment-summary {
+  padding: 0.75rem;
+  margin-top: 1rem;
+  background-color: var(--bs-body-bg);
+  border-radius: 0.5rem;
+}
+
+.equipment-layout .layout-equipment-count {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--bs-dark);
+  vertical-align: middle;
+}
+
+.equipment-layout .layout-transport {
+  border: 1px solid var(--app-border);
+  border-radius: 0.5rem;
+}
+
+.equipment-layout .layout-transport .layout-equipment-summary {
+  border-top: 1px solid var(--app-border);
+}
+
+.equipment-layout .layout-transport .layout-equipment-count {
+  font-size: 1.25rem;
+}
+
+.equipment-layout .layout-location-name,
+.equipment-layout .layout-transport-name,
+.equipment-layout .layout-parent-name,
+.equipment-layout .layout-owner-name,
+.equipment-layout-modal .modal-title {
+  overflow-wrap: anywhere;
+}
+
+.equipment-layout-modal :is(.form-control, .form-select) {
+  border: 1px solid var(--app-muted);
+  background-color: #FFFFFF;
+}
+
+.equipment-layout-modal .layout-equipment-uuid {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.equipment-layout-modal .btn-close {
+  background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='%23252A2C' d='M.3.3a1 1 0 0 1 1.4 0L8 6.6 14.3.3a1 1 0 1 1 1.4 1.4L9.4 8l6.3 6.3a1 1 0 0 1-1.4 1.4L8 9.4l-6.3 6.3a1 1 0 0 1-1.4-1.4L6.6 8 .3 1.7a1 1 0 0 1 0-1.4z'/%3e%3c/svg%3e") center / 0.75rem no-repeat;
+}
+
+.equipment-layout .min-width-0,
+.equipment-layout-modal .min-width-0 {
+  min-width: 0;
+}

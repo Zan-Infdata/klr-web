@@ -87,6 +87,7 @@ echo "      }) ; ";
 echo " function generateTransportCards(data){";
 echo "    const parent = $('#card-container'); ";
 echo "    for (i in data){";
+echo "        console.log(data[i]);";
 echo "        const transCard = getTransportCard(data[i], takeHandler);";
 echo "        parent.append(transCard.card); ";
 echo "    }";

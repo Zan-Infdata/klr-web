@@ -95,8 +95,8 @@ function getTransportCard(cardData, onClickHandler, btnText="Take"){
                     </div>
                 </div>
                 <div id="div-${cardData.code}" class='card-body pt-0 p-3 text-center'>
-                    <h6 class='text-center mb-0'>${cardData.code}</h6>
-                    <span class='text-xs'>${cardData.uuid}</span>
+                    <h6 class='text-center mb-0'>${cardData.name}</h6>
+                    <span class='text-xs'>${cardData.code}</span>
                     <br>
                     <span class='text-xs'>${cardData.parentName}</span>
                     <hr class='horizontal dark my-3'>
@@ -146,7 +146,6 @@ function getSiteCard(cardData){
 }
 
 function getTransportReturnCard(cardData, onClickHandler, btnText="Return"){
-    const disable = cardData.childCount == 0 ? "" : "disabled";
     const cardHtml = `
         <div class='col-lg-3 col-6'>
             <div class='card'>
@@ -162,7 +161,7 @@ function getTransportReturnCard(cardData, onClickHandler, btnText="Return"){
                     <br/>
                     <span class='text-s'>Items in transport: ${cardData.childCount}</span>
                     <hr class='horizontal dark my-3'>
-                    <button class='btn btn-primary' ${disable}>${btnText}</button>
+                    <button class='btn btn-primary'>${btnText}</button>
                 </div>
             </div>
         </div>
@@ -171,14 +170,11 @@ function getTransportReturnCard(cardData, onClickHandler, btnText="Return"){
     const $card = $(cardHtml);
     const $button = $card.find('button.btn-primary');
 
-    //only mount click handler if transport is empty
-    if (cardData.childCount == 0){
-      $button.on('click', function() {
-        $button.prop('disabled', true).text('Processing...');
-        onClickHandler(cardData);
-        $button.prop('disabled', false).text(btnText);
-      });
-    }
+    $button.on('click', function() {
+      $button.prop('disabled', true).text('Processing...');
+      onClickHandler(cardData);
+      $button.prop('disabled', false).text(btnText);
+    });
       
     out = {"card" : $card, "btn": $button}
 
@@ -476,4 +472,103 @@ function calUserAjax(url, swtch, element) {
       } 
   }); 
 
+}
+// Equipment layout summaries share the same count-and-modal interaction.
+function getLayoutLocationCard(data, labels, onOpen) {
+    const $card = $(`
+        <section class='col-12 col-xl-6'>
+            <div class='card layout-location h-100'>
+                <div class='card-header p-3 d-flex align-items-center gap-3'>
+                    <span class='layout-location-icon' aria-hidden='true'><i class='bi bi-geo-alt'></i></span>
+                    <div class='min-width-0'>
+                        <p class='layout-eyebrow mb-1'></p>
+                        <h5 class='layout-location-name mb-0'></h5>
+                        <p class='layout-location-code text-sm text-secondary mb-0'></p>
+                    </div>
+                </div>
+                <div class='card-body p-3 pt-0'>
+                    <div class='layout-equipment-summary d-flex align-items-center justify-content-between gap-3'>
+                        <div><strong class='layout-equipment-count'>…</strong><span class='layout-equipment-label text-sm'></span></div>
+                        <button type='button' class='layout-view-equipment btn btn-outline-secondary btn-sm mb-0'></button>
+                    </div>
+                    <div class='d-flex align-items-center justify-content-between mt-3 mb-2'>
+                        <h6 class='layout-transports-title text-sm mb-0'></h6>
+                        <span class='layout-transport-count text-sm text-secondary'>0</span>
+                    </div>
+                    <div class='layout-transports row g-2'></div>
+                    <p class='layout-no-transports text-sm text-secondary mb-0'></p>
+                </div>
+            </div>
+        </section>
+    `);
+    $card.find('.layout-eyebrow').text(labels.location);
+    $card.find('.layout-location-name').text(data.name || data.code || labels.unknownLocation);
+    $card.find('.layout-location-code').text(data.code || '');
+    $card.find('.layout-equipment-label').text(labels.atLocation);
+    $card.find('.layout-transports-title').text(labels.transports);
+    $card.find('.layout-no-transports').text(labels.noTransports);
+    const $button = $card.find('.layout-view-equipment').text(labels.viewEquipment).on('click', onOpen);
+    return {
+        card: $card,
+        count: $card.find('.layout-equipment-count'),
+        button: $button,
+        summary: $card.find('.layout-equipment-summary'),
+        transports: $card.find('.layout-transports'),
+        transportCount: $card.find('.layout-transport-count'),
+        emptyTransports: $card.find('.layout-no-transports')
+    };
+}
+
+function getLayoutTransportCard(data, labels, parentName, onOpen) {
+    const taken = Number(data.statusId) === 3;
+    const $card = $(`
+        <div class='col-12 col-md-6'>
+            <article class='layout-transport h-100 p-3 d-flex flex-column'>
+                <div class='d-flex align-items-start justify-content-between gap-2 mb-2'>
+                    <div class='min-width-0'>
+                        <h6 class='layout-transport-name text-sm mb-1'></h6>
+                        <p class='layout-transport-code text-xs text-secondary mb-0'></p>
+                    </div>
+                    <span class='layout-transport-status badge flex-shrink-0'></span>
+                </div>
+                <p class='text-xs text-secondary mb-2'><i class='bi bi-geo-alt me-1' aria-hidden='true'></i><span class='layout-parent-name'></span></p>
+                <p class='layout-owner text-sm mb-3'><i class='bi bi-person me-1' aria-hidden='true'></i><span class='layout-owner-name'></span></p>
+                <div class='layout-equipment-summary mt-auto pt-2'>
+                    <div class='mb-2'><strong class='layout-equipment-count'>…</strong><span class='layout-equipment-label text-xs'></span></div>
+                    <button type='button' class='layout-view-equipment btn btn-outline-secondary btn-sm w-100 mb-0'></button>
+                </div>
+            </article>
+        </div>
+    `);
+    $card.find('.layout-transport-name').text(data.name || data.code || labels.transport);
+    $card.find('.layout-transport-code').text(data.code || '');
+    $card.find('.layout-parent-name').text(parentName || labels.unknownLocation);
+    $card.find('.layout-transport-status').addClass(taken ? 'bg-info' : 'bg-light text-dark')
+        .text(taken ? labels.taken : (Number(data.statusId) === 2 ? labels.parked : labels.unknownStatus));
+    if (taken) {
+        const user = data.user || {};
+        const name = [user.name, user.surname].filter(Boolean).join(' ').trim();
+        $card.find('.layout-owner-name').text(labels.takenBy + ': ' + (name || labels.unknownUser));
+    } else {
+        $card.find('.layout-owner').remove();
+    }
+    $card.find('.layout-equipment-label').text(labels.onTransport);
+    const $button = $card.find('.layout-view-equipment').text(labels.viewEquipment).on('click', onOpen);
+    return {card: $card, count: $card.find('.layout-equipment-count'), button: $button};
+}
+
+function getLayoutEquipmentRow(data, typeName, editPrefix) {
+    const $row = $(`
+        <tr>
+            <td class='px-3 py-2'><a class='layout-equipment-name text-sm font-weight-bold'></a><p class='layout-equipment-code text-xs text-secondary mb-0'></p></td>
+            <td class='layout-equipment-uuid text-xs px-3 py-2'></td>
+            <td class='layout-equipment-type text-sm px-3 py-2'></td>
+        </tr>
+    `);
+    $row.find('.layout-equipment-name').text(data.name || data.code || data.uuid || '')
+        .attr('href', editPrefix + encodeURIComponent(data.uuid || ''));
+    $row.find('.layout-equipment-code').text(data.code || '');
+    $row.find('.layout-equipment-uuid').text(data.uuid || '');
+    $row.find('.layout-equipment-type').text(typeName);
+    return $row;
 }
