@@ -5,6 +5,8 @@ use klr\Environment;
 use klr\Lang;
 use klr\ReqURI;
 use klr\SessionMgmt;
+use klr\Output;
+use klr\Csrf;
 
 $logoutUrl = Environment::ROOT_URL."/".ReqURI::URLMAP_AUTH_KY ;
 
@@ -41,6 +43,7 @@ echo "  <html lang='en'>";
 echo "    <head>";
 
 echo "      <meta charset='utf-8'>";
+echo "      <meta name='csrf-token' content='".Output::html(Csrf::token())."'>";
 echo "      <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>";
 echo "      <meta name='description' content='".Environment::META_DESC."'>";
 echo "      <meta name='author' content='".Environment::META_AUTH."'>";
@@ -59,12 +62,7 @@ echo Environment::$BOOT_TOGGLE_CSS_SRC ;
 echo Environment::$MATERIAL_CSS_SRC ;
 echo Environment::$CSTM1_CSS_SRC ;
 
-// custom JS
-echo Environment::$CSTM1_JS_SRC ;
-echo Environment::$MY_JS_SRC ;
-echo Environment::$CHART_JS_SRC ;
-echo Environment::$P_SCROLL_JS_SRC ;
-echo Environment::$S_SCROLL_JS_SRC ;
+
 
 
 
@@ -73,7 +71,7 @@ echo Environment::$S_SCROLL_JS_SRC ;
 echo "    </head>";
 
 
-echo "    <body class='sb-nav-fixed'>";
+echo "    <body class='sb-nav-fixed g-sidenav-show'>";
 
 
 
@@ -83,6 +81,13 @@ echo Environment::$POOPER_JS_SRC ;
 echo Environment::$BOOT_TOGGLE_JS_SRC ;
 // datePicker JS
 echo Environment::$DTPC_JS_SRC ;
+// Dependencies and shared helpers must precede page-specific scripts.
+echo Environment::$P_SCROLL_JS_SRC ;
+echo Environment::$S_SCROLL_JS_SRC ;
+echo Environment::$CHART_JS_SRC ;
+echo Environment::$MY_JS_SRC ;
+echo "<script>window.klrAjaxMessages=".Output::json(array('unavailable' => Lang::getRsrc('ajax','unavailable'), 'unknownOutcome' => Lang::getRsrc('ajax','unknownOutcome'))).";</script>";
+
 
 
 
@@ -93,7 +98,7 @@ echo Environment::$DTPC_JS_SRC ;
 //SIDE NAVIGATION
 echo " <aside class='sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3   bg-gradient-dark' id='sidenav-main'> ";
 echo "   <div class='sidenav-header'> ";
-echo "     <i class='fas fa-times p-3 cursor-pointer text-white opacity-5 position-absolute end-0 top-0 d-none d-xl-none' aria-hidden='true' id='iconSidenav'></i> ";
+echo "     <button type='button' class='btn btn-link text-white p-2 mb-0 position-absolute end-0 top-0 d-xl-none' id='iconSidenav' aria-label='".Lang::getRsrc('page','closeNavigation')."'><span aria-hidden='true'>&times;</span></button> ";
 echo "     <a class='navbar-brand m-0' href='".Environment::ROOT_URL."/".ReqURI::URLMAP_PAGE_KY."' > ";
 echo "       <img src='".Environment::STATIC_URL."img/logo-ct.png' class='navbar-brand-img h-100' alt='main_logo'> ";
 echo "       <span class='ms-1 font-weight-bold text-white'>".Lang::getRsrc('page','ttl')."</span> ";
@@ -169,6 +174,9 @@ echo "           </div> ";
 echo "           <span class='nav-link-text ms-1'>Layout</span> ";
 echo "         </a> ";
 echo "       </li> ";
+echo "       <li class='nav-item' role='presentation'> ";
+echo "         <hr class='horizontal light mx-3 my-2'> ";
+echo "       </li> ";
 echo "       <li class='nav-item'> ";
 echo "         <a class='nav-link text-white ' href='".Environment::ROOT_URL."/".ReqURI::URLMAP_PAGE_KY."/user/change'> ";
 echo "           <div class='text-white text-center me-2 d-flex align-items-center justify-content-center'> ";
@@ -178,19 +186,18 @@ echo "           <span class='nav-link-text ms-1'>Sign In as User</span> ";
 echo "         </a> ";
 echo "       </li> ";
 echo "       <li class='nav-item'> ";
-echo "         <a class='nav-link text-white ' href='../pages/sign-up.html'> ";
+echo "         <form class='nav-link p-0' method='post' action='".Output::html($logoutUrl)."' id='logout-form'> ";
+echo "           <input type='hidden' name='action' value='logout'>";
+echo "           <input type='hidden' name='csrf_token' value='".Output::html(Csrf::token())."'>";
+echo "           <button type='submit' class='nav-link text-white border-0 bg-transparent m-0 w-100 text-start'> ";
 echo "           <div class='text-white text-center me-2 d-flex align-items-center justify-content-center'> ";
-echo "             <i class='bi bi-calendar2-minus fs-6'></i> ";
+echo "             <i class='bi bi-box-arrow-right fs-6' aria-hidden='true'></i> ";
 echo "           </div> ";
-echo "           <span class='nav-link-text ms-1'>Sign Up</span> ";
-echo "         </a> ";
+echo "           <span class='nav-link-text ms-1'>".Lang::getRsrc('page','topMenu92')."</span> ";
+echo "           </button> ";
+echo "         </form> ";
 echo "       </li> ";
 echo "     </ul> ";
-echo "   </div> ";
-echo "   <div class='sidenav-footer position-absolute w-100 bottom-0 '> ";
-echo "     <div class='mx-3'> ";
-echo "       <a class='btn bg-gradient-primary mt-4 w-100' href='https://www.creative-tim.com/product/material-dashboard-pro?ref=sidebarfree' type='button'>Upgrade to pro</a> ";
-echo "     </div> ";
 echo "   </div> ";
 echo " </aside> ";
 
@@ -231,6 +238,13 @@ echo  " <main class='main-content position-relative max-height-vh-100 h-100 bord
     echo "         <h6 class='font-weight-bolder mb-0'>Dashboard</h6> ";
     echo "       </nav> ";
 
+    echo "     <button type='button' class='btn btn-link text-body p-2 mb-0 d-xl-none ms-auto' id='iconNavbarSidenav' aria-controls='sidenav-main' aria-expanded='false' aria-label='".Lang::getRsrc('page','openNavigation')."'> ";
+    echo "       <span class='sidenav-toggler-inner' aria-hidden='true'> ";
+    echo "         <i class='sidenav-toggler-line'></i> ";
+    echo "         <i class='sidenav-toggler-line'></i> ";
+    echo "         <i class='sidenav-toggler-line'></i> ";
+    echo "       </span> ";
+    echo "     </button> ";
     echo "     <div class='collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4' id='navbar'> ";
     echo "       <div class='ms-md-auto pe-md-3 d-flex align-items-center'> ";
     echo "         <div class='input-group input-group-outline'> ";
@@ -239,21 +253,6 @@ echo  " <main class='main-content position-relative max-height-vh-100 h-100 bord
     echo "         </div> ";
     echo "       </div> ";
     echo "       <ul class='navbar-nav  justify-content-end'> ";
-    echo "         <li class='nav-item d-flex align-items-center'> ";
-    echo "           <a href='javascript:;' class='nav-link text-body font-weight-bold px-0'> ";
-    echo "             <i class='fa fa-user me-sm-1'></i> ";
-    echo "             <span class='d-sm-inline d-none'><a href='".$logoutUrl."'>".Lang::getRsrc('page','topMenu92')."</a></span> ";
-    echo "           </a> ";
-    echo "         </li> ";
-    echo "         <li class='nav-item d-xl-none ps-3 d-flex align-items-center'> ";
-    echo "           <a href='javascript:;' class='nav-link text-body p-0' id='iconNavbarSidenav'> ";
-    echo "             <div class='sidenav-toggler-inner'> ";
-    echo "               <i class='sidenav-toggler-line'></i> ";
-    echo "               <i class='sidenav-toggler-line'></i> ";
-    echo "               <i class='sidenav-toggler-line'></i> ";
-    echo "             </div> ";
-    echo "           </a> ";
-    echo "         </li> ";
     echo "         <li class='nav-item px-3 d-flex align-items-center'> ";
     echo "           <a href='javascript:;' class='nav-link text-body p-0'> ";
     echo "             <i class='fa fa-cog fixed-plugin-button-nav cursor-pointer'></i> ";
@@ -342,16 +341,19 @@ echo "     <div class='row'> ";
 echo "       <div class='d-flex w-100 alert alert-warning-striped justify-content-between mb-0 py-1' style='border-radius:0;'> ";
 echo "         ";
 echo "         <span>";
-echo "           You are logged in as <strong>".htmlspecialchars($asUser['name'])." </strong> ";
+echo "           You are logged in as <strong>".Output::html($asUser['name'])." </strong> ";
 echo "         </span>";
 echo "         <button  ";
 echo "           class='btn btn-link mb-0 py-0 ' ";
-echo "           onclick='calUserAjax(`".$mdUserURL."`, `".AjaxManager::LOGOUT_AS_USER."`, null)'> ";
+echo "           id='logout-as-user'> ";
 echo "           Sign out ";
 echo "         </button> ";
 echo "       </div> ";
 echo "     </div> ";
     }
+    echo " <script> ";
+    echo " $('#logout-as-user').on('click', function() { calUserAjax(".Output::json($mdUserURL).", ".Output::json(AjaxManager::LOGOUT_AS_USER).", null); }); ";
+    echo " </script> ";
     echo " <!-- End Navbar --> ";
 
 
@@ -478,6 +480,9 @@ echo  "              </main>";
   // echo "   </div>";
   // echo " </div>";
 
+
+  // Material Dashboard binds navigation to the completed DOM and loaded plugins.
+  echo Environment::$CSTM1_JS_SRC ;
 
   echo " <script> \n";
   echo "   var win = navigator.platform.indexOf('Win') > -1; ";

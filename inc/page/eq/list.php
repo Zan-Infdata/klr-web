@@ -2,12 +2,26 @@
 use klr\Environment;
 use klr\AjaxManager;
 use klr\Lang;
+use klr\IDConstants;
 
 $filterLabels = array();
 foreach (array('uuid', 'name', 'location', 'status', 'allLocations', 'allStatuses', 'stored', 'taken', 'clear', 'count', 'empty', 'loading', 'failed') as $key) {
     $filterLabels[$key] = Lang::getRsrc('equipmentList', $key);
 }
 
+$locationGroups = array(
+    array('typeId' => IDConstants::LOC_WAREHOUSE_TYPE, 'label' => Lang::getRsrc('equipmentList', 'locationWarehouses')),
+    array('typeId' => IDConstants::LOC_CONSTRUCTION_SITE_TYPE, 'label' => Lang::getRsrc('equipmentList', 'locationSites')),
+    array('typeId' => IDConstants::LOC_TRANSPORT_TYPE, 'label' => Lang::getRsrc('equipmentList', 'locationTransports')),
+    array('typeId' => 0, 'label' => Lang::getRsrc('equipmentList', 'locationOther')),
+);
+
+$serviceStatuses = array(
+    IDConstants::EQ_STATUS_READY => array('className' => 'bg-success', 'label' => Lang::getRsrc('equipmentList', 'serviceReady')),
+    IDConstants::EQ_STATUS_NEEDS_SERVICE => array('className' => 'bg-danger', 'label' => Lang::getRsrc('equipmentList', 'serviceNeedsService')),
+    IDConstants::EQ_STATUS_IN_SERVICE => array('className' => 'bg-warning', 'label' => Lang::getRsrc('equipmentList', 'serviceInService')),
+    'unknown' => array('className' => 'bg-secondary', 'label' => Lang::getRsrc('equipmentList', 'serviceUnknown')),
+);
 
 echo "    <div class='row'> ";
 echo "        <div class='col-12'> ";
@@ -49,10 +63,11 @@ echo "                </div> ";
 echo "              </fieldset> ";
 echo "              <p id='eq-filter-count' class='text-sm text-secondary px-3 mb-2' role='status' aria-live='polite'>".htmlspecialchars($filterLabels['loading'], ENT_QUOTES, 'UTF-8')."</p> ";
 echo "              <div class='table-responsive p-0'> ";
-echo "                <table class='table align-items-center mb-0'> ";
+echo "                <table class='table align-items-center mb-0 mobile-list-table'> ";
 echo "                  <thead> ";
 echo "                    <tr> ";
-echo "                      <th class='text-uppercase text-secondary text-xxs font-weight-bolder opacity-7'>Author</th> ";
+echo "                      <th class='text-secondary opacity-7'></th> ";
+echo "                      <th class='text-uppercase text-secondary text-xxs font-weight-bolder opacity-7'>Name</th> ";
 echo "                      <th class='text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2'>Function</th> ";
 echo "                      <th class='text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7'>Status</th> ";
 echo "                      <th class='text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7'>Location</th> ";
@@ -73,6 +88,8 @@ echo "        </div> ";
 echo " <script> ";
 
 echo " let equipmentRows = []; ";
+echo " const equipmentLocationGroups = ".json_encode($locationGroups, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)."; ";
+echo " const equipmentServiceStatuses = ".json_encode($serviceStatuses, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)."; ";
 echo " const equipmentFilterLabels = ".json_encode($filterLabels, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)."; ";
 
 echo "      function getEquipmenttData() { ";
@@ -89,24 +106,22 @@ echo "              success: function(data){  ";
 
 echo "                 const code = data.CODE; ";
 echo "                 const eqData = data.DATA; ";
-echo "                 if(code == 200){ ";
+echo "                 if(code === 200){ ";
 echo "                     generateEquipmentRows(eqData); ";
 echo "                 } ";
 echo "                 else if(code == 401){ ";
-echo "                     redirectToLogin(); ";
+echo "                     return redirectToLogin(); ";
 echo "                 } ";
 echo "                 else { ";
 echo "                     $('#eq-filter-count').text(equipmentFilterLabels.failed); ";
 echo "                 } ";
 echo "              }, ";
 echo "              error: function(xhr,opts,err){  ";
-echo "                  if (xhr.status == 401) { redirectToLogin(); return; } ";
+echo "                  if (xhr.status == 401) { return redirectToLogin(); } ";
 echo "                  $('#eq-filter-count').text(equipmentFilterLabels.failed); ";
 
-if (Environment::DEBUG){
-    echo "                  alert(xhr.responseText + ':' + err); ";
-    echo "                  console.log(xhr.responseText + ':' + err); ";
-} // if
+    echo "                  ajaxFailure(xhr); ";
+
 
 echo "              } ";
 echo "         } ); ";	
@@ -129,14 +144,14 @@ echo " function generateEquipmentRows(data) { ";
 echo "     const parent = $('#eq-tbl'); ";
 echo "     parent.empty(); ";
 echo "     equipmentRows = []; ";
-echo "     const locations = new Set(); ";
+echo "     const locations = new Map(); ";
 echo "     const locationSelect = $('#eq-filter-location'); ";
 echo "     const selectedLocation = locationSelect.val(); ";
-echo "     locationSelect.find('option:not(:first)').remove(); ";
+echo "     locationSelect.children().not(':first').remove(); ";
 echo "     for (const item of data) { ";
-echo "         const eqCard = getEquipmentListRow(item); ";
+echo "         const eqCard = getEquipmentListRow(item, '', equipmentServiceStatuses, equipmentFilterLabels); ";
 echo "         eqCard.card.find('.badge').text(item.parent.isWarehouse ? equipmentFilterLabels.stored : equipmentFilterLabels.taken); ";
-echo "         const location = String(item.parent.name || ''); ";
+echo "         const location = String(item.parent.id ?? ''); ";
 echo "         equipmentRows.push({ ";
 echo "             row: eqCard.card, ";
 echo "             uuid: String(item.uuid || '').toLowerCase(), ";
@@ -144,15 +159,27 @@ echo "             name: String(item.name || '').toLowerCase(), ";
 echo "             location: location, ";
 echo "             status: item.parent.isWarehouse ? 'stored' : 'taken' ";
 echo "         }); ";
-echo "         if (location) { locations.add(location); } ";
+echo "         if (location) { locations.set(location, {id: location, name: String(item.parent.name || ''), typeId: Number(item.parent.typeId)}); } ";
 echo "         parent.append(eqCard.card); ";
 echo "     } ";
-echo "     Array.from(locations).sort(function(a, b) { return a.localeCompare(b); }).forEach(function(location) { ";
-echo "         locationSelect.append($('<option>').val(location).text(location)); ";
+echo "     const knownTypes = new Set(equipmentLocationGroups.filter(function(group) { return group.typeId !== 0; }).map(function(group) { return group.typeId; })); ";
+echo "     let hasGroups = false; ";
+echo "     equipmentLocationGroups.forEach(function(group) { ";
+echo "         const groupLocations = Array.from(locations.values()).filter(function(location) { ";
+echo "             return group.typeId === 0 ? !knownTypes.has(location.typeId) : location.typeId === group.typeId; ";
+echo "         }).sort(function(a, b) { return a.name.localeCompare(b.name); }); ";
+echo "         if (groupLocations.length === 0) { return; } ";
+echo "         if (hasGroups) { ";
+echo "             locationSelect.append($('<option>').val('__divider-' + group.typeId).prop('disabled', true).attr('aria-hidden', 'true').text('────────────')); ";
+echo "         } ";
+echo "         const options = $('<optgroup>').attr('label', group.label); ";
+echo "         groupLocations.forEach(function(location) { options.append($('<option>').val(location.id).text(location.name)); }); ";
+echo "         locationSelect.append(options); ";
+echo "         hasGroups = true; ";
 echo "     }); ";
 echo "     locationSelect.val(locations.has(selectedLocation) ? selectedLocation : ''); ";
 echo "     const emptyRow = $('<tr>').attr('id', 'eq-filter-empty'); ";
-echo "     emptyRow.append($('<td>').attr('colspan', 5).addClass('text-center text-sm text-secondary py-4').text(equipmentFilterLabels.empty)); ";
+echo "     emptyRow.append($('<td>').attr('colspan', 6).addClass('text-center text-sm text-secondary py-4').text(equipmentFilterLabels.empty)); ";
 echo "     parent.append(emptyRow); ";
 echo "     $('#eq-list-filters').prop('disabled', false); ";
 echo "     filterEquipmentRows(); ";
@@ -168,10 +195,10 @@ echo "     equipmentRows.forEach(function(item) { ";
 echo "         const matches = item.uuid.includes(uuid) && item.name.includes(name) ";
 echo "             && (!location || item.location === location) ";
 echo "             && (!status || item.status === status); ";
-echo "         item.row.toggle(matches); ";
+echo "         item.row.toggleClass('d-none', !matches); ";
 echo "         if (matches) { shown += 1; } ";
 echo "     }); ";
-echo "     $('#eq-filter-empty').toggle(shown === 0); ";
+echo "     $('#eq-filter-empty').toggleClass('d-none', shown !== 0); ";
 echo "     $('#eq-filter-count').text(equipmentFilterLabels.count.replace('{shown}', shown).replace('{total}', equipmentRows.length)); ";
 echo " } ";
 

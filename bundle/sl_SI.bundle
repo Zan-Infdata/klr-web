@@ -30,6 +30,7 @@ retry = "Poskusi znova"
 close = "Zapri"
 
 [equipmentList]
+selectTransport = "Izberite transport za prikaz opreme."
 uuid = "UUID"
 name = "Ime opreme"
 location = "Lokacija"
@@ -43,6 +44,14 @@ count = "Prikazano {shown} od {total}"
 empty = "Nobena oprema ne ustreza filtrom."
 loading = "Nalaganje opreme..."
 failed = "Opreme ni bilo mogoče naložiti."
+serviceReady = "Pripravljeno"
+serviceNeedsService = "Potrebuje servis"
+serviceInService = "Na servisu"
+serviceUnknown = "Neznan servisni status"
+locationWarehouses = "Skladišča"
+locationSites = "Delovni nalogi"
+locationTransports = "Transporti"
+locationOther = "Ostale lokacije"
 
 ; ------------
 ; PHP Klr Web
@@ -132,6 +141,8 @@ topSrchPH = Išči...
 
 topMenu91 = Uporabniški račun
 topMenu92 = Odjava
+openNavigation = Odpri navigacijo
+closeNavigation = Zapri navigacijo
 
 
 sideGroup1 = OSNOVA
@@ -512,6 +523,12 @@ finishButton0 = Preglej
 
 
 [ajax]
+csrfFailed = "Varnostno preverjanje ni uspelo. Osvežite stran in poskusite znova."
+authRequired = "Seja se je iztekla. Ponovno se prijavite."
+badMethod = "Ta način zahteve ni podprt."
+unavailable = "API trenutno ni dosegljiv. Poskusite znova."
+timeout = "Čas za odgovor API-ja je potekel. Poskusite znova."
+unknownOutcome = "Izid zahteve ni znan. Pred ponovno oddajo preverite trenutno stanje podatkov."
 alrt0 = Zahteva je uspešno izvedena.
 alrt1 = NAPAKA: Avtorizacija ni uspešna. Vaš profil nima pravice za izvedbo te zahteve.
 alrt2 = OPOZORILO: Zahteva se ni izvedla uspešno - podatki niso posodobljeni

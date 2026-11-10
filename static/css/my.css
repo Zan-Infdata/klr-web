@@ -671,3 +671,205 @@ body.sb-nav-fixed {
 .equipment-layout-modal .min-width-0 {
   min-width: 0;
 }
+
+/* Service-state indicator in the equipment list's unnamed first column. */
+#eq-tbl .equipment-service-column {
+  width: 1%;
+  white-space: nowrap;
+}
+
+#eq-tbl .equipment-service-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Keep the mobile navigation control outside the collapsing header tools. */
+.sb-nav-fixed #iconNavbarSidenav {
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.sb-nav-fixed #iconSidenav {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+@media (max-width: 1199.98px) {
+  .sb-nav-fixed #iconNavbarSidenav {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .sb-nav-fixed #navbarBlur #navbar {
+    flex-basis: 100%;
+    min-width: 0;
+    margin-right: 0 !important;
+  }
+
+  .sb-nav-fixed #navbar > div {
+    flex: 1;
+    min-width: 0;
+    margin-right: 1rem;
+  }
+
+  .sb-nav-fixed #navbar > .navbar-nav {
+    width: auto;
+    flex-shrink: 0;
+  }
+}
+
+/* Shared transport/location cards: one column on phones, existing desktop grid. */
+.inventory-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.inventory-card .card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.inventory-card .card-body > :is(h6, span, ul) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.inventory-card .card-body > hr {
+  width: 100%;
+  margin-top: auto;
+}
+
+.inventory-card .btn {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.equipment-layout :is(.layout-location-code, .layout-transport-code) {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 991.98px) {
+  /* Keep the table's headers available to assistive technology. */
+  .sb-nav-fixed .mobile-list-table > thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .sb-nav-fixed .mobile-list-table,
+  .sb-nav-fixed .mobile-list-table > tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .sb-nav-fixed .mobile-list-table > tbody > tr {
+    display: block;
+    position: relative;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  .sb-nav-fixed .mobile-list-table > tbody > tr > td {
+    display: block;
+    width: auto;
+    min-width: 0;
+    padding: 0.25rem 0;
+    border: 0;
+    text-align: left !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .sb-nav-fixed .mobile-list-table .d-flex {
+    min-width: 0;
+  }
+
+  .sb-nav-fixed .mobile-list-table .mobile-list-title > .d-flex {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .sb-nav-fixed .mobile-list-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.125rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--app-muted);
+  }
+
+  .sb-nav-fixed .mobile-list-table .mobile-list-actions {
+    text-align: right !important;
+  }
+
+  .sb-nav-fixed .mobile-list-table .mobile-list-actions > a {
+    display: inline-block;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .sb-nav-fixed .mobile-list-table .mobile-list-actions .btn {
+    max-width: 100%;
+    margin-bottom: 0;
+    white-space: normal;
+  }
+
+  .sb-nav-fixed #eq-tbl .equipment-service-column {
+    width: 12px;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .sb-nav-fixed .mobile-list-table .equipment-service-column + .mobile-list-title {
+    padding-right: 1.5rem;
+  }
+
+  .sb-nav-fixed .main-content .card :is(h4, h5, h6, p, .badge) {
+    overflow-wrap: anywhere;
+  }
+
+  .equipment-layout .layout-location > .card-body > .layout-equipment-summary {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .equipment-layout .layout-transport > .d-flex {
+    flex-wrap: wrap;
+  }
+}
+
+/* Give the menu the available sidebar height, including on short screens. */
+.sb-nav-fixed #sidenav-main {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.sb-nav-fixed #sidenav-main > :is(.sidenav-header, hr) {
+  flex-shrink: 0;
+}
+
+.sb-nav-fixed #sidenav-main .navbar-collapse {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}

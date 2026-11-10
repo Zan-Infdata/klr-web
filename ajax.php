@@ -2,9 +2,12 @@
 	
     use klr\ReqURI;
     use klr\SessionMgmt;
+    use klr\AjaxResponse;
 
 
     if (SessionMgmt::checkAuth(false)){
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Allow: POST'); AjaxResponse::error(405); }
+        if (!\klr\Csrf::valid()) { \klr\Csrf::reject(); }
 
         if (ReqURI::isAjaxFileName()) {
 
@@ -12,23 +15,21 @@
             $pgCheck = file_exists($pageFile);
 
             if($pgCheck){
+                AjaxResponse::request();
                 include_once($pageFile);
             }
             else{
-                http_response_code(404);
-                echo "AJAX call ERR - 404";
+                AjaxResponse::error(404);
             } // else
         
         } // if
         else {
-            http_response_code(404);
-            echo "AJAX call ERR - 404";
+            AjaxResponse::error(404);
         } // else
 
     }
     else {
-		http_response_code(401);
-		echo "AJAX call is not authorized";
+		AjaxResponse::error(401);
     } // else
 	
     

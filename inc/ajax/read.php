@@ -1,6 +1,7 @@
 <?php
 
 use klr\DateHandler;
+use klr\AjaxResponse;
 use klr\SessionMgmt;
 
 use klr\Paging;
@@ -13,6 +14,7 @@ use klr\IDConstants;
 
 	$data = array();
 
+	$_POST['req'] = AjaxResponse::request();
 	if (isset($_POST['req'])){
 		
 		// read LIST ARRAY
@@ -35,7 +37,7 @@ use klr\IDConstants;
 		switch ($md) {
 
         	case AjaxManager::SY_USER_LIST_GET :
-				$res = APIRead::getUsersList();
+				$res = AjaxResponse::validateRead(APIRead::getUsersList(), true);
 
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -47,7 +49,7 @@ use klr\IDConstants;
 				break;
 
         	case AjaxManager::MD_EQ_GET :
-				$res = APIRead::getEqByUUID($element);
+				$res = AjaxResponse::validateRead(APIRead::getEqByUUID($element), false);
 
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -59,7 +61,7 @@ use klr\IDConstants;
 				break;
 
         	case AjaxManager::MD_LOC_GET :
-				$res = APIRead::getLocByUUID($element);
+				$res = AjaxResponse::validateRead(APIRead::getLocByUUID($element), false);
 
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -71,7 +73,7 @@ use klr\IDConstants;
 				break;
 
         	case AjaxManager::MD_LOC_AVAILIBLE_GET :
-				$res = APIRead::getAvailibleRealEstate($sort, $fltr);
+				$res = AjaxResponse::validateRead(APIRead::getAvailibleRealEstate($sort, $fltr), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -83,7 +85,7 @@ use klr\IDConstants;
 				break;
 
         	case AjaxManager::MD_LOC_TRANS_AVAILIBLE_GET :
-				$res = APIRead::getAvailibleTrans($sort, $fltr);
+				$res = AjaxResponse::validateRead(APIRead::getAvailibleTrans($sort, $fltr), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -95,7 +97,7 @@ use klr\IDConstants;
 				break;
 
         	case AjaxManager::MD_LOC_MY_TRANS_GET :
-				$res = APIRead::getMyTrans();
+				$res = AjaxResponse::validateRead(APIRead::getMyTrans(), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -107,7 +109,7 @@ use klr\IDConstants;
 				break;
 
         	case AjaxManager::MD_LOC_MY_TRANS_RETURN_GET :
-				$res = APIRead::getMyTransReturn();
+				$res = AjaxResponse::validateRead(APIRead::getMyTransReturn(), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -119,7 +121,7 @@ use klr\IDConstants;
 				break;
 
 			case AjaxManager::MD_LOC_EQ_ON_LOC_GET :
-				$res = APIRead::getEqOnLoc($id);
+				$res = AjaxResponse::validateRead(APIRead::getEqOnLoc($id), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -131,7 +133,7 @@ use klr\IDConstants;
 				break;
 
 			case AjaxManager::MD_EQ_TYPE_LIST_GET :
-				$res = APIRead::getEqTypeList();
+				$res = AjaxResponse::validateRead(APIRead::getEqTypeList(), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -143,7 +145,7 @@ use klr\IDConstants;
 				break;
 
 			case AjaxManager::MD_LOC_WAREHOUSE_LIST_GET :
-				$res = APIRead::getActiveWarehouseList();
+				$res = AjaxResponse::validateRead(APIRead::getActiveWarehouseList(), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -155,7 +157,7 @@ use klr\IDConstants;
 				break;
 
 			case AjaxManager::MD_LOC_SITES_LIST_GET :
-				$res = APIRead::getActiveSitesList();
+				$res = AjaxResponse::validateRead(APIRead::getActiveSitesList(), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -167,7 +169,7 @@ use klr\IDConstants;
 				break;
 
 			case AjaxManager::MD_LOC_TRANS_LIST_GET :
-				$res = APIRead::getActiveTrans($sort, $fltr);
+				$res = AjaxResponse::validateRead(APIRead::getActiveTrans($sort, $fltr), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -179,7 +181,7 @@ use klr\IDConstants;
 				break;
 
 			case AjaxManager::MD_EQ_ACTIVE_LIST_GET :
-				$res = APIRead::getActiveEqList();
+				$res = AjaxResponse::validateRead(APIRead::getActiveEqList(), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -191,7 +193,7 @@ use klr\IDConstants;
 				break;
 
 			case AjaxManager::MD_EQ_LIST_GET :
-				$res = APIRead::getAllEqList();
+				$res = AjaxResponse::validateRead(APIRead::getAllEqList(), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -203,12 +205,13 @@ use klr\IDConstants;
 				break;
 
 			case AjaxManager::MD_EQ_HISTORY_GET :
-				$res = APIRead::getEqTransitions($element, null, null);
+				$res = AjaxResponse::validateRead(APIRead::getEqTransitions($element, null, null), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
 					
 					$transitions = $res[APIManager::DATA][APIManager::DATA];
+                    AjaxResponse::requireFields($transitions, array('parentFrom','parentFromName','parentFromType','parentTo','parentToName','parentToType','time'));
 
 
 					$history = array();
@@ -231,11 +234,12 @@ use klr\IDConstants;
 							$from = $curr["time"];
 							$to = $transitions[$i+1]["time"];
 
-							$currRes = APIRead::getTransTransitions($curr["parentTo"], $from, $to);
+							$currRes = AjaxResponse::validateRead(APIRead::getTransTransitions($curr["parentTo"], $from, $to), true);
 							
 							$data['CODE'] = $currRes[APIManager::CODE];
 							if ($currRes[APIManager::CODE] == 200) {
 								$currTransData = $currRes[APIManager::DATA][APIManager::DATA];
+                                AjaxResponse::requireFields($currTransData, array('parentFrom','parentFromName','parentTo','parentToName','time'));
 
 								$transTransitions = array();
 
@@ -290,7 +294,7 @@ use klr\IDConstants;
 				break;
 
 			case AjaxManager::MD_LOC_TRANS_HISTORY_GET :
-				$res = APIRead::getTransTransitions($element, $from, $to);
+				$res = AjaxResponse::validateRead(APIRead::getTransTransitions($element, $from, $to), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -354,6 +358,7 @@ use klr\IDConstants;
     } // if
 
 
-    echo json_encode($data);	
+    if (!isset($data['CODE'])) { AjaxResponse::error(400); }
+    AjaxResponse::send($data['CODE'], $data['DATA']);
 
 ?>	

@@ -1,56 +1,21 @@
 <?php
 
+use klr\AjaxResponse;
+use klr\AjaxManager;
+use klr\APIManager;
+use klr\APIRead;
 use klr\SessionMgmt;
 
-use klr\AjaxManager;
-use klr\APIRead;
-use klr\APIManager;
-
-
-	$data = array();
-
-	if (isset($_POST['req'])){
-		
-		// read LIST ARRAY
-		$req = $_POST['req'];
-		
-		// read BI VALUES
-		$md = isset($req['MD']) ? $req['MD'] : null ;
-		$element = isset($req['ELEM']) ? $req['ELEM'] : null ;
-
-		
-
-		switch ($md) {
-
-        	case AjaxManager::LOGIN_AS_USER :
-				$res = APIRead::getUserById($element);
-
-				$data['CODE'] = $res[APIManager::CODE];
-				if ($res[APIManager::CODE] == 200) {
-					SessionMgmt::setAsUser($res[APIManager::DATA][APIManager::DATA]);
-					$data['DATA'] = array(
-						"success" => true
-					);
-				}
-				else {
-					$data['DATA'] = array();
-				} 
-				break;
-
-        	case AjaxManager::LOGOUT_AS_USER :
-					SessionMgmt::usetAsUser();
-					$data['DATA'] = array(
-						"success" => true
-					);
-					$data['CODE'] = 200;
-				break;
-
-
-        } // switch
-
-    } // if
-
-
-    echo json_encode($data);	
-
-?>	
+$req = AjaxResponse::request();
+$context = SessionMgmt::capture();
+if ($context === null) { AjaxResponse::error(401); }
+if ($req['MD'] === AjaxManager::LOGIN_AS_USER) {
+    if (!AjaxResponse::positiveId($req['ELEM'] ?? null)) { AjaxResponse::error(400); }
+    $result = AjaxResponse::validateRead(APIRead::getUserById($req['ELEM']), false);
+    $user = $result[APIManager::DATA][APIManager::DATA];
+    if (!isset($user['id']) || (string) $user['id'] !== (string) $req['ELEM']) { AjaxResponse::error(502); }
+} elseif ($req['MD'] === AjaxManager::LOGOUT_AS_USER) {
+    $user = null;
+} else { AjaxResponse::error(400); }
+if (!SessionMgmt::changeAsUser($context, $user)) { AjaxResponse::error(409); }
+AjaxResponse::send(200, array('success' => true));

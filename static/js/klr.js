@@ -1,25 +1,82 @@
+// Install immediately on app pages and after jQuery arrives on the login page.
+function installCsrfAjax() {
+    const jq = window.jQuery;
+    if (!jq || !jq.ajaxPrefilter || jq.klrCsrfInstalled) { return; }
+    jq.klrCsrfInstalled = true;
+    jq.ajaxPrefilter(function(options, original, xhr) {
+        if (String(options.type || options.method || 'GET').toUpperCase() !== 'POST') { return; }
+        let url;
+        try { url = new URL(options.url || window.location.href, window.location.href); }
+        catch (error) { return; }
+        if (!/^https?:$/.test(url.protocol) || url.origin !== window.location.origin || url.username || url.password
+            || !(url.pathname === '/ajax' || url.pathname.startsWith('/ajax/'))) { return; }
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        const token = meta ? meta.content : '';
+        if (/^[a-f0-9]{64}$/.test(token)) { xhr.setRequestHeader('X-CSRF-Token', token); }
+    });
+}
+installCsrfAjax();
+document.addEventListener('DOMContentLoaded', installCsrfAjax);
+
 function redirectToLogin(){
-  console.log(window.location);
-  window.location.replace('/auth');
+  window.location.replace('/login');
 }
 
 
 
+// Mutations use the legacy API adapter's explicit result, never HTTP success alone.
+function ajaxFailure(response, mutation=false) {
+    const code = response && (response.CODE || response.status);
+    if (code === 401) { redirectToLogin(); return; }
+    const messages = window.klrAjaxMessages || {};
+    const body = response && response.responseJSON ? response.responseJSON : response;
+    let message = body && typeof body.DATA === 'string' ? body.DATA : null;
+    if (!message) {
+        message = mutation && (!code || code === 502 || code === 504)
+            ? (messages.unknownOutcome || 'The request outcome is unknown. Check the current data before submitting again.')
+            : (messages.unavailable || 'Failed to process request. Please try again.');
+    }
+    alert(message);
+}
+
+function submitMutation(url, req, onSuccess) {
+    return $.ajax({url: url, method: 'POST', data: {req: req}, dataType: 'json',
+        success: function(response) {
+            if (response && response.CODE === 200) { onSuccess(response); }
+            else { ajaxFailure(response, true); }
+        },
+        error: function(xhr) { ajaxFailure(xhr, true); }
+    });
+}
+
+function runButtonAction($button, action, pendingText='Processing...') {
+    if ($button.data('requestPending')) { return null; }
+    const text = $button.text(), disabled = $button.prop('disabled');
+    $button.data('requestPending', true).prop('disabled', true).text(pendingText);
+    const restore = function() { $button.removeData('requestPending').prop('disabled', disabled).text(text); };
+    try {
+        const request = action();
+        if (request && typeof request.always === 'function') { request.always(restore); }
+        else { restore(); }
+        return request;
+    } catch (error) { restore(); throw error; }
+}
+
 function getLocationCard(cardData, onClickHandler){
 
     const cardHtml = `
-        <div class='col-lg-3 col-6'>
-            <div class='card'>
+        <div class='col-12 col-sm-6 col-lg-3 mb-3 inventory-card'>
+            <div class='card h-100'>
                 <div class='card-header m-auto p-3 text-center'>
                     <div class='icon icon-shape icon-lg bg-gradient-primary shadow text-center border-radius-lg'>
                         <i class='bi bi-truck'></i>
                     </div>
                 </div>
                 <div class='card-body pt-0 p-3 text-center'>
-                    <h6 class='text-center mb-0'>${cardData.name}</h6>
-                    <span class='text-xs'>${cardData.uuid}</span>
+                    <h6 class='text-center mb-0'></h6>
+                    <span class='location-uuid text-xs'></span>
                     <br/>
-                    <span class='text-xs'>${cardData.name}</span>
+                    <span class='location-name text-xs'></span>
                     <hr class='horizontal dark my-3'>
                     <button class='btn btn-primary'>Move to location</button>
                 </div>
@@ -28,11 +85,12 @@ function getLocationCard(cardData, onClickHandler){
         `;
 
     const $card = $(cardHtml);
+    $card.find('h6, .location-name').text(cardData.name ?? '');
+    $card.find('.location-uuid').text(cardData.uuid ?? '');
     const $button = $card.find('button.btn-primary');
 
     $button.on('click', function() {
-        $button.prop('disabled', true).text('Processing...');
-        onClickHandler(cardData);
+        return runButtonAction($button, function() { return onClickHandler(cardData); });
     });
 
     out = {"card" : $card, "btn": $button}
@@ -43,10 +101,10 @@ function getLocationCard(cardData, onClickHandler){
 
 function getEqListItemLayout(itemData){
     const itemHtml = `
-        <li>${itemData.name}</li>
+        <li></li>
         `;
 
-    const $item = $(itemHtml);
+    const $item = $(itemHtml).text(itemData.name ?? '');
 
     out = {"item" : $item}
 
@@ -59,17 +117,17 @@ function getTransportCardLayout(cardData){
   const takenBadge = cardData.statusId == 3 ? "<span class='badge bg-info'>taken</span>" : "";
 
     const cardHtml = `
-        <div class='col-lg-12 col-6'>
-            <div class='card'>
+        <div class='col-12 inventory-card mb-3'>
+            <div class='card h-100'>
                 <div class='card-header m-auto p-3 text-center'>
                     <div class='icon icon-shape icon-lg bg-gradient-primary shadow text-center border-radius-lg'>
                         <i class='bi bi-truck'></i>
                     </div>
                 </div>
                 <div class='card-body pt-0 p-3 text-center'>
-                    <h6 class='text-center mb-0'>${cardData.name}</h6>
+                    <h6 class='text-center mb-0'></h6>
                     ${takenBadge}
-                    <ul id='trans-${cardData.id}'>
+                    <ul>
                     </ul>
                 </div>
             </div>
@@ -78,6 +136,8 @@ function getTransportCardLayout(cardData){
 
     const $card = $(cardHtml);
     const $list = $card.find('ul');
+    $card.find('h6').text(cardData.name ?? '');
+    if (/^[1-9]\d*$/.test(String(cardData.id))) { $list.attr('id', 'trans-' + cardData.id); }
 
     out = {"card" : $card, "list" : $list}
 
@@ -87,32 +147,33 @@ function getTransportCardLayout(cardData){
 
 function getTransportCard(cardData, onClickHandler, btnText="Take"){
     const cardHtml = `
-        <div class='col-lg-3 col-6'>
-            <div class='card'>
+        <div class='col-12 col-sm-6 col-lg-3 mb-3 inventory-card'>
+            <div class='card h-100'>
                 <div class='card-header m-auto p-3 text-center'>
                     <div class='icon icon-shape icon-lg bg-gradient-primary shadow text-center border-radius-lg'>
                         <i class='bi bi-truck'></i>
                     </div>
                 </div>
-                <div id="div-${cardData.code}" class='card-body pt-0 p-3 text-center'>
-                    <h6 class='text-center mb-0'>${cardData.name}</h6>
-                    <span class='text-xs'>${cardData.code}</span>
+                <div class='card-body pt-0 p-3 text-center'>
+                    <h6 class='text-center mb-0'></h6>
+                    <span class='transport-code text-xs'></span>
                     <br>
-                    <span class='text-xs'>${cardData.parentName}</span>
+                    <span class='transport-parent-name text-xs'></span>
                     <hr class='horizontal dark my-3'>
-                    <button class='btn btn-primary'>${btnText}</button>
+                    <button class='btn btn-primary'></button>
                 </div>
             </div>
         </div>
         `;
 
     const $card = $(cardHtml);
-    const $button = $card.find('button.btn-primary');
+    $card.find('h6').text(cardData.name ?? '');
+    $card.find('.transport-code').text(cardData.code ?? '');
+    $card.find('.transport-parent-name').text(cardData.parentName ?? '');
+    const $button = $card.find('button.btn-primary').text(btnText);
 
     $button.on('click', function() {
-        $button.prop('disabled', true).text('Processing...');
-        onClickHandler(cardData);
-        $button.prop('disabled', false).text(btnText);
+        return runButtonAction($button, function() { return onClickHandler(cardData); });
     });
 
     out = {"card" : $card, "btn": $button}
@@ -124,13 +185,13 @@ function getTransportCard(cardData, onClickHandler, btnText="Take"){
 
 function getSiteCard(cardData){
     const cardHtml = `
-        <div class='col-lg-3 col-6'>
-            <div class='card'>
+        <div class='col-12 col-sm-6 col-lg-3 mb-3 inventory-card'>
+            <div class='card h-100'>
                 <div class='card-header m-auto p-3 text-center'>
-                    ${cardData.name}
+
                 </div>
-                <div id='site-${cardData.id}' class='card-body pt-0 p-3 text-center'>
-                    <ul id='site-list-${cardData.id}'></ul>
+                <div class='card-body pt-0 p-3 text-center'>
+                    <ul></ul>
                 </div>
             </div>
         </div>
@@ -138,6 +199,11 @@ function getSiteCard(cardData){
 
     const $card = $(cardHtml);
     const $list = $card.find('ul');
+    $card.find('.card-header').text(cardData.name ?? '');
+    if (/^[1-9]\d*$/.test(String(cardData.id))) {
+        $card.find('.card-body').attr('id', 'site-' + cardData.id);
+        $list.attr('id', 'site-list-' + cardData.id);
+    }
 
     out = { "card" : $card, "list" : $list }
 
@@ -147,33 +213,35 @@ function getSiteCard(cardData){
 
 function getTransportReturnCard(cardData, onClickHandler, btnText="Return"){
     const cardHtml = `
-        <div class='col-lg-3 col-6'>
-            <div class='card'>
+        <div class='col-12 col-sm-6 col-lg-3 mb-3 inventory-card'>
+            <div class='card h-100'>
                 <div class='card-header m-auto p-3 text-center'>
                     <div class='icon icon-shape icon-lg bg-gradient-primary shadow text-center border-radius-lg'>
                         <i class='bi bi-truck'></i>
                     </div>
                 </div>
                 <div class='card-body pt-0 p-3 text-center'>
-                    <h6 class='text-center mb-0'>${cardData.code}</h6>
-                    <span class='text-xs'>${cardData.uuid}</span>
-                    <span class='text-xs'>${cardData.parentName}</span>
+                    <h6 class='text-center mb-0'></h6>
+                    <span class='transport-uuid text-xs'></span>
+                    <span class='transport-parent-name text-xs'></span>
                     <br/>
-                    <span class='text-s'>Items in transport: ${cardData.childCount}</span>
+                    <span class='transport-equipment-count text-s'></span>
                     <hr class='horizontal dark my-3'>
-                    <button class='btn btn-primary'>${btnText}</button>
+                    <button class='btn btn-primary'></button>
                 </div>
             </div>
         </div>
         `;
 
     const $card = $(cardHtml);
-    const $button = $card.find('button.btn-primary');
+    $card.find('h6').text(cardData.code ?? '');
+    $card.find('.transport-uuid').text(cardData.uuid ?? '');
+    $card.find('.transport-parent-name').text(cardData.parentName ?? '');
+    $card.find('.transport-equipment-count').text('Items in transport: ' + cardData.childCount);
+    const $button = $card.find('button.btn-primary').text(btnText);
 
     $button.on('click', function() {
-      $button.prop('disabled', true).text('Processing...');
-      onClickHandler(cardData);
-      $button.prop('disabled', false).text(btnText);
+      return runButtonAction($button, function() { return onClickHandler(cardData); });
     });
       
     out = {"card" : $card, "btn": $button}
@@ -186,20 +254,20 @@ function getTransportReturnCard(cardData, onClickHandler, btnText="Return"){
 function getTransportRow(cardData, onClickHandler){
     const cardHtml = `
                     <tr> 
-                      <td> 
+                      <td class='mobile-list-title'>
                         <div class='d-flex px-2 py-1'> 
                           <div> 
                             <img src='/klrweb/static/img/team-2.jpg' class='avatar avatar-sm me-3 border-radius-lg' alt='user1'> 
                           </div> 
                           <div class='d-flex flex-column justify-content-center'> 
-                            <h6 class='mb-0 text-sm'>${cardData.code}</h6> 
-                            <p class='text-xs text-secondary mb-0'>${cardData.uuid}</p> 
+                            <h6 class='transport-code mb-0 text-sm'></h6>
+                            <p class='transport-uuid text-xs text-secondary mb-0'></p>
                           </div> 
                         </div> 
                       </td> 
                      <td> 
                         <p class='text-xs font-weight-bold mb-0'>Located at:</p> 
-                        <p class='text-xs text-secondary mb-0'>${cardData.parentName}</p> 
+                        <p class='transport-parent-name text-xs text-secondary mb-0'></p>
                       </td> 
                       <td class='align-middle text-center text-sm'> 
                         <span class='badge badge-sm bg-gradient-success'>Online</span> 
@@ -207,12 +275,15 @@ function getTransportRow(cardData, onClickHandler){
                       <td class='align-middle text-center'> 
                         <span class='text-secondary text-xs font-weight-bold'>23/04/18</span> 
                       </td> 
-                      <td class='align-middle'> 
+                      <td class='align-middle mobile-list-actions'>
                         <button class='btn btn-primary btn-transport'>Chose</button>
                       </td> 
                     </tr>
     `;
     const $card = $(cardHtml);
+    $card.find('.transport-code').text(cardData.code ?? '');
+    $card.find('.transport-uuid').text(cardData.uuid ?? '');
+    $card.find('.transport-parent-name').text(cardData.parentName ?? '');
     const $button = $card.find('button.btn-primary');
 
     $button.on('click', function() {
@@ -230,20 +301,20 @@ function getTransportRow(cardData, onClickHandler){
 function getUserRow(cardData, onClickHandler){
     const cardHtml = `
                     <tr> 
-                      <td> 
+                      <td class='mobile-list-title'>
                         <div class='d-flex px-2 py-1'> 
                           <div> 
                             <img src='/klrweb/static/img/team-2.jpg' class='avatar avatar-sm me-3 border-radius-lg' alt='user1'> 
                           </div> 
                           <div class='d-flex flex-column justify-content-center'> 
-                            <h6 class='mb-0 text-sm'>${cardData.name}</h6> 
-                            <p class='text-xs text-secondary mb-0'>${cardData.surname}</p> 
+                            <h6 class='user-name mb-0 text-sm'></h6>
+                            <p class='user-surname text-xs text-secondary mb-0'></p>
                           </div> 
                         </div> 
                       </td> 
                      <td> 
                         <p class='text-xs font-weight-bold mb-0'>email:</p> 
-                        <p class='text-xs text-secondary mb-0'>${cardData.email}</p> 
+                        <p class='user-email text-xs text-secondary mb-0'></p>
                       </td> 
                       <td class='align-middle text-center text-sm'> 
                         <span class='badge badge-sm bg-gradient-success'>Online</span> 
@@ -251,18 +322,19 @@ function getUserRow(cardData, onClickHandler){
                       <td class='align-middle text-center'> 
                         <span class='text-secondary text-xs font-weight-bold'>23/04/18</span> 
                       </td> 
-                      <td class='align-middle'> 
+                      <td class='align-middle mobile-list-actions'>
                         <button class='btn btn-primary btn-transport'>Log in as user</button>
                       </td> 
                     </tr>
     `;
     const $card = $(cardHtml);
+    $card.find('.user-name').text(cardData.name ?? '');
+    $card.find('.user-surname').text(cardData.surname ?? '');
+    $card.find('.user-email').text(cardData.email ?? '');
     const $button = $card.find('button.btn-primary');
 
     $button.on('click', function() {
-        $(".btn-transport").prop('disabled', false).text('Chose');
-        $button.prop('disabled', true).text('Active...');
-        onClickHandler(cardData);
+        return runButtonAction($button, function() { return onClickHandler(cardData); });
     });
 
     out = {"card" : $card, "btn": $button}
@@ -271,94 +343,110 @@ function getUserRow(cardData, onClickHandler){
     
 }
 
-function getEquipmentRow(cardData, onClickHandler, isTake){
+function getEquipmentServiceDot(serviceStatusId, serviceStatuses={}) {
+    const status = serviceStatuses[Number(serviceStatusId)] || serviceStatuses.unknown
+        || {className: 'bg-secondary', label: 'Unknown service status'};
+    return $('<span>').addClass('equipment-service-dot ' + status.className)
+        .attr({role: 'img', title: status.label, 'aria-label': status.label});
+}
 
-    btnText = isTake ? "Take" : "Leave";
-    btnTextActive = isTake ? "Taking..." : "Leaving...";
-
-    const cardHtml = `
-            <tr>
-              <td>
+function getEquipmentRow(cardData, onClickHandler, isTake, serviceStatuses={}) {
+    const btnText = isTake ? 'Take' : 'Leave';
+    const btnTextActive = isTake ? 'Taking...' : 'Leaving...';
+    const $card = $(`
+        <tr>
+            <td class='equipment-service-column align-middle text-center'></td>
+            <td class='mobile-list-title'>
                 <div class='d-flex px-2 py-1'>
-                  <div>
-                    <img src='/klrweb/static/img/team-2.jpg' class='avatar avatar-sm me-3 border-radius-lg' alt='user1'>
-                  </div>
-                  <div class='d-flex flex-column justify-content-center'>
-                    <h6 class='mb-0 text-sm'>${cardData.name}</h6>
-                    <p class='text-xs text-secondary mb-0'>${cardData.code}</p>
-                  </div>
+                    <div class='d-flex flex-column justify-content-center'>
+                        <h6 class='equipment-name mb-0 text-sm'></h6>
+                        <p class='equipment-code text-xs text-secondary mb-0'></p>
+                    </div>
                 </div>
-              </td>
-              <td>
-                <p class='text-xs font-weight-bold mb-0'>${cardData.uuid}</p>
+            </td>
+            <td data-label='UUID'>
+                <p class='equipment-uuid text-xs font-weight-bold mb-0'></p>
                 <p class='text-xs text-secondary mb-0'>Equipment</p>
-              </td>
-              <td class='align-middle text-center text-sm'>
-                <span class='badge badge-sm bg-gradient-success'>Online</span>
-              </td>
-              <td class='align-middle text-center'>
-                <span class='text-secondary text-xs font-weight-bold'>TODO</span>
-              </td>
-              <td class='align-middle'>
-                <button class='btn btn-outline-primary'>${btnText}</button>
-              </td>
-            </tr>
-    `;
-    const $card = $(cardHtml);
-    const $button = $card.find('button.btn-outline-primary');
-
+            </td>
+            <td class='align-middle mobile-list-actions'>
+                <button type='button' class='btn btn-outline-primary'></button>
+            </td>
+        </tr>
+    `);
+    $card.find('.equipment-service-column').append(getEquipmentServiceDot(cardData.serviceStatusId, serviceStatuses));
+    $card.find('.equipment-name').text(cardData.name || '');
+    $card.find('.equipment-code').text(cardData.code || '');
+    $card.find('.equipment-uuid').text(cardData.uuid || '');
+    const $button = $card.find('button.btn-outline-primary').text(btnText);
     $button.on('click', function() {
-        $button.prop('disabled', true).text(btnTextActive);
-        onClickHandler(cardData);
+        return runButtonAction($button, function() { return onClickHandler(cardData); }, btnTextActive);
     });
-
-    out = {"card" : $card, "btn": $button}
-
-    return out
-    
+    return {card: $card, btn: $button};
 }
 
-function getEquipmentListRow(cardData, urlpfx=""){
+// Only application URLs with a complete UUID may become equipment edit links.
+function getEquipmentEditUrl(uuid, prefix) {
+    if (typeof uuid !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuid)) {
+        return null;
+    }
+    if (typeof prefix !== 'string') { return null; }
+    const path = prefix + encodeURIComponent(uuid);
+    try {
+        const url = new URL(path, window.location.href);
+        if (!/^https?:$/.test(url.protocol) || url.origin !== window.location.origin) { return null; }
+        return path;
+    } catch (error) {
+        return null;
+    }
+}
 
-    const href = urlpfx+'edit/'+cardData.uuid
+function getEquipmentListRow(cardData, urlpfx="", serviceStatuses={}, mobileLabels={}){
+
+    const href = getEquipmentEditUrl(cardData.uuid, urlpfx + 'edit/');
 
     const badge_class = cardData.parent.isWarehouse ? "bg-gradient-success" : "bg-gradient-warning";
     const status_txt = cardData.parent.isWarehouse ? "Stored" : "Taken";
 
     const cardHtml = `
             <tr>
-              <td>
+              <td class='equipment-service-column align-middle text-center'>
+              </td>
+              <td class='mobile-list-title'>
                 <div class='d-flex px-2 py-1'>
-                  <div>
-                    <img src='/klrweb/static/img/team-2.jpg' class='avatar avatar-sm me-3 border-radius-lg' alt='user1'>
-                  </div>
                   <div class='d-flex flex-column justify-content-center'>
-                    <h6 class='mb-0 text-sm'>${cardData.name}</h6>
-                    <p class='text-xs text-secondary mb-0'>${cardData.code}</p>
+                    <h6 class='equipment-name mb-0 text-sm'></h6>
+                    <p class='equipment-code text-xs text-secondary mb-0'></p>
                   </div>
                 </div>
               </td>
-              <td>
-                <p class='text-xs font-weight-bold mb-0'>${cardData.uuid}</p>
+              <td data-label='UUID'>
+                <p class='equipment-uuid text-xs font-weight-bold mb-0'></p>
                 <p class='text-xs text-secondary mb-0'>Equipment</p>
               </td>
               <td class='align-middle text-center text-sm'>
                 <span class='badge badge-sm ${badge_class}'>${status_txt}</span>
               </td>
-              <td class='align-middle text-center'>
-                <span class='text-secondary text-xs font-weight-bold'>${cardData.parent.name}</span>
+              <td class='align-middle text-center mobile-list-location'>
+                <span class='text-secondary text-xs font-weight-bold'></span>
               </td>
-              <td class='align-middle'>
-                <a class='link-primary' href='${href}' >Edit</a>
+              <td class='align-middle mobile-list-actions'>
+                <a class='link-primary'>Edit</a>
               </td>
             </tr>
     `;
     const $card = $(cardHtml);
+    $card.find('.equipment-name').text(cardData.name ?? '');
+    $card.find('.equipment-code').text(cardData.code ?? '');
+    $card.find('.equipment-uuid').text(cardData.uuid ?? '');
+    $card.find('.mobile-list-location > span').text(cardData.parent.name ?? '');
+    if (href !== null) { $card.find('a.link-primary').attr('href', href); }
+    else { $card.find('a.link-primary').attr('aria-disabled', 'true'); }
+    $card.find('.mobile-list-location').attr('data-label', mobileLabels.location || 'Location');
+    $card.find('.equipment-service-column').append(getEquipmentServiceDot(cardData.serviceStatusId, serviceStatuses));
     const $button = $card.find('button.btn-outline-primary');
 
     $button.on('click', function() {
-        $button.prop('disabled', true).text(btnTextActive);
-        onClickHandler(cardData);
+        return runButtonAction($button, function() { return onClickHandler(cardData); }, btnTextActive);
     });
 
     out = {"card" : $card, "btn": $button}
@@ -378,12 +466,14 @@ function getEqHistory(data, isOut){
               <i class='bi ${icon} ${color} text-gradient'></i>
             </span>
             <div class='timeline-content'>
-              <h6 class='text-dark text-sm font-weight-bold mb-0'>${data.parentToName}</h6>
-              <p class='text-secondary font-weight-bold text-xs mt-1 mb-0'>${data.time}</p>
+              <h6 class='text-dark text-sm font-weight-bold mb-0'></h6>
+              <p class='text-secondary font-weight-bold text-xs mt-1 mb-0'></p>
             </div>
           </div>
     `;
     const $timeline = $(html);
+    $timeline.find('h6').text(data.parentToName ?? '');
+    $timeline.find('p').text(data.time ?? '');
 
     out = {"html" : $timeline}
 
@@ -399,12 +489,14 @@ function getEqTransHistory(data){
               <i class='bi bi-truck text-info text-gradient'></i>
             </span>
             <div class='timeline-content'>
-              <h6 class='text-dark text-sm font-weight-bold mb-0'>${data.parentToName}</h6>
-              <p class='text-secondary font-weight-bold text-xs mt-1 mb-0'>${data.time}</p>
+              <h6 class='text-dark text-sm font-weight-bold mb-0'></h6>
+              <p class='text-secondary font-weight-bold text-xs mt-1 mb-0'></p>
             </div>
           </div>
     `;
     const $timeline = $(html);
+    $timeline.find('h6').text(data.parentToName ?? '');
+    $timeline.find('p').text(data.time ?? '');
 
     out = {"html" : $timeline}
 
@@ -427,51 +519,19 @@ function getLocationHistoryContainer(data, isOut){
 }
 
 function generateSelectOptions(selectData, selectorId){
-
-    let out = []
-    const $selector = $("#"+selectorId);
-
-    for(i in selectData){
-      currData = selectData[i]
-      const optionHtml = `
-              <option value='${currData.id}'>
-                ${currData.name}
-              </option>
-      `;
-      const $option = $(optionHtml)
-      $selector.append($option);
-      out.push($option);
+    const out = [];
+    const $selector = $(document.getElementById(selectorId));
+    for (const currData of selectData) {
+        const $option = $('<option>').val(currData.id).text(currData.name ?? '');
+        $selector.append($option);
+        out.push($option);
     }
-
-    return out
-    
+    return out;
 }
 
 
 function calUserAjax(url, swtch, element) {
-  let req = {};  
-  req.MD = swtch;    
-  req.ELEM = element;    
-
-  $.ajax({ 
-      url: url, 
-      method: 'POST', 
-      data: { req: req }, 
-      dataType: 'json', 
-      success: function(data) { 
-          if(data.CODE == 200){ 
-              window.location.replace('/'); 
-          } 
-          else if(data.CODE == 401){ 
-              redirectToLogin(); 
-          } 
-      }, 
-      error: function(xhr, status, error) { 
-          console.error('API call failed:', error); 
-          alert('Failed to process request. Please try again.'); 
-      } 
-  }); 
-
+    return submitMutation(url, {MD: swtch, ELEM: element}, function() { window.location.replace('/'); });
 }
 // Equipment layout summaries share the same count-and-modal interaction.
 function getLayoutLocationCard(data, labels, onOpen) {
@@ -557,18 +617,61 @@ function getLayoutTransportCard(data, labels, parentName, onOpen) {
     return {card: $card, count: $card.find('.layout-equipment-count'), button: $button};
 }
 
-function getLayoutEquipmentRow(data, typeName, editPrefix) {
+function getLayoutEquipmentRow(data, typeName, editPrefix, typeLabel='Type') {
     const $row = $(`
         <tr>
-            <td class='px-3 py-2'><a class='layout-equipment-name text-sm font-weight-bold'></a><p class='layout-equipment-code text-xs text-secondary mb-0'></p></td>
-            <td class='layout-equipment-uuid text-xs px-3 py-2'></td>
+            <td class='px-3 py-2 mobile-list-title'><a class='layout-equipment-name text-sm font-weight-bold'></a><p class='layout-equipment-code text-xs text-secondary mb-0'></p></td>
+            <td class='layout-equipment-uuid text-xs px-3 py-2' data-label='UUID'></td>
             <td class='layout-equipment-type text-sm px-3 py-2'></td>
         </tr>
     `);
-    $row.find('.layout-equipment-name').text(data.name || data.code || data.uuid || '')
-        .attr('href', editPrefix + encodeURIComponent(data.uuid || ''));
+    const href = getEquipmentEditUrl(data.uuid, editPrefix);
+    $row.find('.layout-equipment-name').text(data.name || data.code || data.uuid || '');
+    if (href !== null) { $row.find('.layout-equipment-name').attr('href', href); }
+    else { $row.find('.layout-equipment-name').attr('aria-disabled', 'true'); }
     $row.find('.layout-equipment-code').text(data.code || '');
     $row.find('.layout-equipment-uuid').text(data.uuid || '');
-    $row.find('.layout-equipment-type').text(typeName);
+    $row.find('.layout-equipment-type').attr('data-label', typeLabel).text(typeName);
     return $row;
 }
+
+// The theme binds the toggle buttons at the end of page.php, before DOM ready.
+document.addEventListener('DOMContentLoaded', function() {
+    const sidenav = document.getElementById('sidenav-main');
+    const menuButton = document.getElementById('iconNavbarSidenav');
+    const closeButton = document.getElementById('iconSidenav');
+    if (!sidenav || !menuButton || !closeButton) return;
+
+    const desktop = window.matchMedia('(min-width: 1200px)');
+    function syncNavigation() {
+        const open = document.body.classList.contains('g-sidenav-pinned');
+        menuButton.setAttribute('aria-expanded', String(!desktop.matches && open));
+        sidenav.inert = !desktop.matches && !open;
+    }
+
+    // The stock color configurator is absent from this application shell.
+    if (!document.querySelector('[data-class]') && typeof navbarColorOnResize === 'function') {
+        window.removeEventListener('resize', navbarColorOnResize);
+    }
+
+    menuButton.addEventListener('click', function() {
+        syncNavigation();
+        if (!sidenav.inert) closeButton.focus();
+    });
+    closeButton.addEventListener('click', function() {
+        syncNavigation();
+        menuButton.focus();
+    });
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && !desktop.matches && document.body.classList.contains('g-sidenav-pinned')) {
+            toggleSidenav();
+            syncNavigation();
+            menuButton.focus();
+        }
+    });
+    desktop.addEventListener('change', function() {
+        document.body.classList.remove('g-sidenav-pinned');
+        syncNavigation();
+    });
+    syncNavigation();
+});

@@ -10,7 +10,13 @@
 
     namespace klr;
 
-	$config = parse_ini_file(__DIR__ . '/web.conf', true);
+    $configFile = __DIR__ . '/web.conf';
+    if (!is_file($configFile) || !is_readable($configFile)) { throw new \RuntimeException('Application configuration is unavailable'); }
+    $config = parse_ini_file($configFile, true);
+    if (!is_array($config)) { throw new \RuntimeException('Application configuration is unavailable'); }
+    foreach (array('server_url', 'api_url', 'secret') as $key) {
+        if (!isset($config[$key]) || !is_string($config[$key]) || $config[$key] === '') { throw new \RuntimeException('Application configuration is unavailable'); }
+    }
 
 	define(
 		__NAMESPACE__ . '\\CONFIG',
@@ -21,7 +27,7 @@
 	class Environment {
 
 
-		const DEBUG = true;
+
 
 		const SRVR_URL = CONFIG["server_url"];
 		const ROOT_URL = "";
@@ -481,6 +487,27 @@
 
 
 
+    // Encode at the output boundary; stored/API values remain plain domain data.
+    class Output {
+        public static function html($value) {
+            return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+
+        public static function json($value) {
+            $encoded = json_encode($value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE);
+            return $encoded === false ? 'null' : $encoded;
+        }
+
+        public static function url($value) {
+            if (!is_string($value)) { return '#'; }
+            $url = trim($value);
+            if ($url === '' || preg_match('/[\x00-\x20\x7f\\\\]/', $url) || strpos($url, '//') === 0) { return '#'; }
+            $scheme = parse_url($url, PHP_URL_SCHEME);
+            if ($scheme === false || ($scheme !== null && !in_array(strtolower($scheme), array('http', 'https'), true))) { return '#'; }
+            return $url;
+        }
+    }
+
 	// Internal PAGE structure
     class Page {
 
@@ -512,8 +539,8 @@
 		public static function renrerBreadCrumb($hrefarea, $area, $page){
 			
 			echo  "        <ol class='breadcrumb mb-4'>";
-			echo  "            <li class='breadcrumb-item'><a href='".$hrefarea."'>".$area."</a></li>";
-			echo  "            <li class='breadcrumb-item active'>".$page."</li>";
+			echo  "            <li class='breadcrumb-item'><a href='".Output::html(Output::url($hrefarea))."'>".Output::html($area)."</a></li>";
+			echo  "            <li class='breadcrumb-item active'>".Output::html($page)."</li>";
 			echo  "        </ol>";
 
 
@@ -529,9 +556,161 @@
 
 
 
+    // Accept metadata only: never dump requests, cookies, credentials or responses.
+    class Diagnostics {
+        private static $requestId;
+        public static function isDebug() {
+            if (!defined(__NAMESPACE__ . '\\CONFIG') || !is_array(CONFIG)) { return false; }
+            $value = CONFIG['debug'] ?? false;
+            return (is_bool($value) || is_string($value) || is_int($value))
+                && filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true;
+        }
+
+        public static function event($event, $context=array()) {
+            if (!in_array($event, array('request', 'login_succeeded', 'login_failed', 'refresh_failed', 'access_refreshed', 'impersonation', 'api_request', 'application_error', 'api_configuration_failed'), true)) { return; }
+            if (self::$requestId === null) { self::$requestId = (class_exists(AppErrors::class, false) ? AppErrors::requestId() : null) ?? bin2hex(random_bytes(12)); }
+            $entry = array('event' => $event, 'request_id' => self::$requestId);
+            if (!is_array($context)) { $context = array(); }
+            $endpoints = array('page', 'ajax', 'auth', 'login', 'img',
+                '/V1/auth/login', '/V1/auth/refresh', '/V1/auth/jwt-login',
+                '/V1/eq/active', '/V1/eq/list', '/V1/eq/show', '/V1/eq/types', '/V1/eq/transitions', '/V1/eq/create', '/V1/eq/update', '/V1/eq/take', '/V1/eq/leave',
+                '/V1/loc/availible', '/V1/loc/availible-eq', '/V1/loc/sites', '/V1/loc/warehouses', '/V1/loc/show', '/V1/loc/update',
+                '/V1/trans/availible', '/V1/trans/list', '/V1/trans/my', '/V1/trans/my-return', '/V1/trans/show', '/V1/trans/transitions', '/V1/trans/create', '/V1/trans/take', '/V1/trans/return', '/V1/trans/move', '/V1/user/list', '/V1/user/get');
+            if (isset($context['endpoint']) && in_array($context['endpoint'], $endpoints, true)) { $entry['endpoint'] = $context['endpoint']; }
+            foreach (array('status' => 599, 'curl_errno' => 10000, 'elapsed_ms' => 86400000) as $key => $max) {
+                if (isset($context[$key]) && is_int($context[$key]) && $context[$key] >= ($key === 'status' ? 100 : 0) && $context[$key] <= $max) { $entry[$key] = $context[$key]; }
+            }
+            if ($event === 'application_error' && self::isDebug()) {
+                foreach (array('phase' => array('bootstrap','configuration','session','localization','dispatch'),
+                    'category' => array('deprecation','warning','parse_error','type_error','exception','fatal')) as $key => $allowed) {
+                    if (isset($context[$key]) && in_array($context[$key], $allowed, true)) { $entry[$key] = $context[$key]; }
+                }
+                if (isset($context['severity']) && is_int($context['severity']) && $context['severity'] > 0 && $context['severity'] <= 32767) { $entry['severity'] = $context['severity']; }
+            }
+            error_log(json_encode($entry));
+        }
+    }
+
+    class Csrf {
+        const SESSION_KEY = 'csrfToken';
+
+        public static function rotate() {
+            $_SESSION[self::SESSION_KEY] = bin2hex(random_bytes(32));
+        }
+
+        public static function token() {
+            if (SessionMgmt::isRotated()) { return ''; }
+            if (!self::isToken($_SESSION[self::SESSION_KEY] ?? null)) { self::rotate(); }
+            return $_SESSION[self::SESSION_KEY];
+        }
+
+        private static function isToken($value) {
+            return is_string($value) && strlen($value) === 64 && preg_match('/^[a-f0-9]{64}$/D', $value);
+        }
+
+        private static function origin($url, $originHeader=false) {
+            if (!is_string($url) || strlen($url) > 8192 || preg_match('/[\x00-\x20\x7f]/', $url)
+                || filter_var($url, FILTER_VALIDATE_URL) === false) { return null; }
+            $parts = parse_url($url);
+            if (!is_array($parts) || !isset($parts['scheme'], $parts['host']) || isset($parts['user']) || isset($parts['pass'])) { return null; }
+            $scheme = strtolower($parts['scheme']);
+            if (!in_array($scheme, array('http', 'https'), true)) { return null; }
+            if ($originHeader && (isset($parts['path']) && $parts['path'] !== '' || isset($parts['query']) || isset($parts['fragment']))) { return null; }
+            $port = $parts['port'] ?? ($scheme === 'https' ? 443 : 80);
+            if ($port < 1) { return null; }
+            return $scheme . '://' . strtolower($parts['host']) . ':' . $port;
+        }
+
+        public static function valid() {
+            $expected = $_SESSION[self::SESSION_KEY] ?? null;
+            if (!self::isToken($expected)) { return false; }
+            $headerPresent = array_key_exists('HTTP_X_CSRF_TOKEN', $_SERVER);
+            $formPresent = array_key_exists('csrf_token', $_POST);
+            if (!$headerPresent && !$formPresent) { return false; }
+            foreach (array($headerPresent ? $_SERVER['HTTP_X_CSRF_TOKEN'] : $expected,
+                $formPresent ? $_POST['csrf_token'] : $expected) as $value) {
+                if (!self::isToken($value) || !hash_equals($expected, $value)) { return false; }
+            }
+            $origin = self::origin(CONFIG['server_url'] ?? null);
+            if ($origin === null) { return false; }
+            if (array_key_exists('HTTP_ORIGIN', $_SERVER)) { return self::origin($_SERVER['HTTP_ORIGIN'], true) === $origin; }
+            if (array_key_exists('HTTP_REFERER', $_SERVER)) { return self::origin($_SERVER['HTTP_REFERER']) === $origin; }
+            return true;
+        }
+
+        public static function reject() {
+            AjaxResponse::send(403, Lang::getRsrc('ajax', 'csrfFailed'));
+        }
+    }
+
+    class AjaxResponse {
+        public static function send($code, $data) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code($code);
+            echo json_encode(array('CODE' => $code, 'DATA' => $data), JSON_INVALID_UTF8_SUBSTITUTE);
+            exit();
+        }
+
+        public static function error($code, $unknown=false) {
+            $keys = array(400 => 'alrt9', 401 => 'authRequired', 403 => 'alrt1', 404 => 'alrt4', 405 => 'badMethod',
+                409 => 'alrt2', 502 => 'unavailable', 504 => 'timeout');
+            $key = $unknown ? 'unknownOutcome' : ($keys[$code] ?? 'alrt2');
+            self::send($code, Lang::getRsrc('ajax', $key));
+        }
+
+        public static function request() {
+            if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { header('Allow: POST'); self::error(405); }
+            $request = $_POST['req'] ?? null;
+            if (!is_array($request) || !isset($request['MD']) || !is_string($request['MD'])) { self::error(400); }
+            return $request;
+        }
+
+        public static function uuid($value) {
+            return is_string($value) && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iD', $value);
+        }
+
+        public static function positiveId($value) {
+            return (is_int($value) || is_string($value)) && filter_var($value, FILTER_VALIDATE_INT) !== false && (int) $value > 0;
+        }
+
+        public static function record($value, $description=false) {
+            if (!is_array($value) || !self::uuid($value['uuid'] ?? null)) { return false; }
+            foreach ($description ? array('code', 'name', 'desc') : array('code', 'name') as $key) {
+                if (!isset($value[$key]) || !is_string($value[$key]) || trim($value[$key]) === '') { return false; }
+            }
+            return isset($value['isActive']) && in_array($value['isActive'], array(0, 1, '0', '1'), true);
+        }
+
+        public static function mutation($result) {
+            $code = APIManager::mutationStatus($result);
+            if ($code !== 200) { self::error($code, ($result['outcome_unknown'] ?? false) === true); }
+            self::send(200, Lang::getRsrc('ajax', 'alrt0'));
+        }
+
+        public static function requireFields($items, $fields) {
+            foreach ($items as $item) {
+                if (!is_array($item)) { self::error(502); }
+                foreach ($fields as $field) { if (!array_key_exists($field, $item)) { self::error(502); } }
+            }
+        }
+
+        public static function validateRead($result, $list=null) {
+            $code = $result[APIManager::CODE] ?? 502;
+            if ($code !== 200) { self::error(is_int($code) && $code >= 400 && $code <= 599 ? $code : 502); }
+            $body = $result[APIManager::DATA] ?? null;
+            if (!is_array($body) || ($body[APIManager::ERR] ?? null) !== 0 || !is_array($body[APIManager::DATA] ?? null)) { self::error(502); }
+            $items = $body[APIManager::DATA];
+            $isList = $items === array() || array_keys($items) === range(0, count($items) - 1);
+            if ($list === true && (!$isList || count(array_filter($items, 'is_array')) !== count($items))) { self::error(502); }
+            if ($list === false && ($isList || !isset($items['id']))) { self::error(502); }
+            return $result;
+        }
+    }
+
     class SessionMgmt {
 
 		const TIMEOUT = 1800;   //in seconds
+		const AUTH_GENERATION_KY = "authGeneration";
 
 
 		const AUTHERR_KY = "authERR";
@@ -551,50 +730,139 @@
 		const ADD_TWO_OK = "AWOOK";
 
 
-		public static function init($u, $a, $t){
+        const CONTEXT_REVISION_KY = 'contextRevision';
+        const ROTATED_KY = 'sessionRotated';
+        private static $requestContext;
 
-			$_SESSION[self::AUTH_KY] = true;
-			$_SESSION[self::SSTART_KY] = time();
+        public static function start($issueCookie=true) {
+            if (session_status() === PHP_SESSION_ACTIVE) { return true; }
+            ini_set('session.use_strict_mode', '1');
+            ini_set('session.use_only_cookies', '1');
+            ini_set('session.use_cookies', '1');
+            ini_set('session.use_trans_sid', '0');
+            session_set_cookie_params(array('lifetime' => 0, 'path' => CookieManager::COOKIE_PATH, 'domain' => '',
+                'secure' => CookieManager::isSecure(), 'httponly' => true, 'samesite' => 'Lax'));
+            if (!$issueCookie) {
+                // Rejected unsafe requests must not replace a browser's existing session cookie.
+                ini_set('session.use_cookies', '0');
+                $sid = $_COOKIE[session_name()] ?? null;
+                if (!is_string($sid) || !preg_match('/^[A-Za-z0-9,-]{1,128}$/D', $sid)) { $_SESSION = array(); return false; }
+                session_id($sid);
+                if (!session_start()) { $_SESSION = array(); return false; }
+                if (session_id() !== $sid) { session_abort(); session_id(''); $_SESSION = array(); return false; }
+                return true;
+            }
+            return session_start();
+        }
 
-			$_SESSION[self::SYUSER_KY] = $u;
-			$_SESSION[self::SYACL_KY] = $a;
-			
-			if (!is_null($t)){
-				$_SESSION[self::TKN_KY] = $t;
-			}
+        public static function init($u, $a, $t) {
+            if (self::isRotated() || !is_array($u) || !isset($u['id']) || !is_string($t) || $t === '') { return false; }
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                // Keep only a tombstone at the old ID so queued anonymous requests cannot restore it again.
+                $previous = $_SESSION;
+                $_SESSION = array(self::ROTATED_KY => true);
+                if (!session_regenerate_id(false)) { $_SESSION = $previous; return false; }
+            }
+            $_SESSION = array();
+            $_SESSION[self::AUTH_KY] = true;
+            $_SESSION[self::SSTART_KY] = time();
+            $_SESSION[self::SYUSER_KY] = $u;
+            $_SESSION[self::SYACL_KY] = $a;
+            $_SESSION[self::TKN_KY] = $t;
+            $_SESSION[self::AUTH_GENERATION_KY] = bin2hex(random_bytes(32));
+            $_SESSION[self::CONTEXT_REVISION_KY] = 0;
+            Csrf::rotate();
+            if (session_status() === PHP_SESSION_ACTIVE && !ini_get('session.use_cookies') && !CookieManager::setSessionCookie(session_id())) { self::destroy(); return false; }
+            self::$requestContext = null;
+            return true;
+        }
 
-		} // init
+        public static function destroy() {
+            $_SESSION = array();
+            self::$requestContext = null;
+            CookieManager::deleteTokenCookie();
+            CookieManager::deleteSessionCookie();
+            if (session_status() === PHP_SESSION_ACTIVE) { session_destroy(); }
+        }
 
+        public static function isRotated() {
+            return ($_SESSION[self::ROTATED_KY] ?? false) === true;
+        }
 
+        public static function checkAuth($rebuild) {
+            $valid = isset($_SESSION[self::SSTART_KY], $_SESSION[self::AUTH_KY], $_SESSION[self::TKN_KY])
+                && $_SESSION[self::AUTH_KY] === true && is_string($_SESSION[self::TKN_KY]) && $_SESSION[self::TKN_KY] !== ''
+                && isset($_SESSION[self::AUTH_GENERATION_KY]) && is_string($_SESSION[self::AUTH_GENERATION_KY])
+                && (time() - $_SESSION[self::SSTART_KY]) < self::TIMEOUT;
+            if ($valid && $rebuild) { $_SESSION[self::SSTART_KY] = time(); }
+            return $valid;
+        }
 
-		
-		public static function destroy(){
-			
-			$_SESSION = array();
-			CookieManager::deleteTokenCookie();
-			session_destroy();
-			
-		} // destroy		
-		
-	
-		
-		public static function checkAuth($rebuild){
-			$r=false;
+        public static function close() {
+            if (session_status() === PHP_SESSION_ACTIVE) { session_write_close(); }
+        }
 
-			if ( isset($_SESSION[self::SSTART_KY]) && ( (time() - $_SESSION[self::SSTART_KY]) < self::TIMEOUT) ){
-				if ( isset($_SESSION[self::AUTH_KY]) && $_SESSION[self::AUTH_KY] === true ){
-					if ($rebuild) {
-						session_regenerate_id(true);
-						$_SESSION[self::SSTART_KY] = time();
-					} // if
+        public static function capture() {
+            if (self::$requestContext === null) {
+                if (!self::checkAuth(false) || session_id() === '') { return null; }
+                self::$requestContext = array('session_id' => session_id(), 'generation' => $_SESSION[self::AUTH_GENERATION_KY],
+                    'user_id' => $_SESSION[self::SYUSER_KY]['id'], 'token' => self::getAcToken(), 'as_user' => self::getAsUser(),
+                    'revision' => $_SESSION[self::CONTEXT_REVISION_KY] ?? 0, 'refresh' => CookieManager::getTokenCookie());
+            }
+            if (session_status() !== PHP_SESSION_ACTIVE && !self::reopen(self::$requestContext)) { return null; }
+            if (!self::matches(self::$requestContext)) { return null; }
+            self::$requestContext['token'] = self::getAcToken();
+            return self::$requestContext;
+        }
 
-					$r=true;
-				} // if
-			} // if
+        private static function matches($context, $revision=false) {
+            return self::checkAuth(false) && session_id() === $context['session_id']
+                && ($_SESSION[self::AUTH_GENERATION_KY] ?? null) === $context['generation']
+                && (string) ($_SESSION[self::SYUSER_KY]['id'] ?? '') === (string) $context['user_id']
+                && (!$revision || ($_SESSION[self::CONTEXT_REVISION_KY] ?? 0) === $context['revision']);
+        }
 
-			return $r;
-		} // checkAuth
+        public static function reopen($context, $revision=false) {
+            if (!is_array($context)) { return false; }
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                // Internal compare/reopen must never issue a replacement browser cookie or cache headers.
+                ini_set('session.use_cookies', '0');
+                $cacheLimiter = session_cache_limiter('');
+                session_id($context['session_id']);
+                $started = session_start();
+                if (!$started || session_id() !== $context['session_id']) {
+                    if ($started) { session_abort(); }
+                    ini_set('session.use_cookies', '1');
+                    session_cache_limiter($cacheLimiter);
+                    session_id('');
+                    $_SESSION = array();
+                    return false;
+                }
+            }
+            if (!self::matches($context, $revision)) {
+                session_abort();
+                ini_set('session.use_cookies', '1');
+                $_SESSION = array();
+                return false;
+            }
+            return true;
+        }
 
+        public static function changeAsUser($context, $user) {
+            if (!self::reopen($context, true)) { return false; }
+            if ($user === null) { unset($_SESSION[self::AS_USER_KY]); }
+            else { $_SESSION[self::AS_USER_KY] = $user; }
+            $_SESSION[self::CONTEXT_REVISION_KY] = $context['revision'] + 1;
+            self::close();
+            return true;
+        }
+
+        public static function invalidate($context, $expectedToken=null) {
+            if (!self::reopen($context)) { return false; }
+            if ($expectedToken !== null && self::getAcToken() !== $expectedToken) { self::close(); return false; }
+            self::destroy();
+            return true;
+        }
 
 		public static function setRegister($ky, $obj) {	
 
@@ -768,37 +1036,50 @@
 	}
 
 
-	class CookieManager {
+    class CookieManager {
+        const COOKIE_NAME = 'klr_ck';
+        const COOKIE_PATH = '/';
 
-		const COOKIE_NAME = "klr_ck";
-		const COOKIE_EXPIRE = 86400*30; // in days
+        public static function isSecure() {
+            // A false value is an explicit HTTP-development exception, never inferred from headers.
+            return !array_key_exists('cookie_secure', CONFIG)
+                || filter_var(CONFIG['cookie_secure'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false;
+        }
 
-		public static function setTokenCookie($value) {
-			setcookie(self::COOKIE_NAME, $value, time() + self::COOKIE_EXPIRE);
-		}
+        private static function options($expires) {
+            return array('expires' => $expires, 'path' => self::COOKIE_PATH, 'secure' => self::isSecure(),
+                'httponly' => true, 'samesite' => 'Lax');
+        }
 
-		public static function getTokenCookie() {
-			return isset($_COOKIE[self::COOKIE_NAME]) ? $_COOKIE[self::COOKIE_NAME] : null;
-		}
+        public static function setTokenCookie($value) {
+            $payload = JWTManager::verifyAuthToken($value, true);
+            if ($payload === null) { return false; }
+            return setcookie(self::COOKIE_NAME, $value, self::options($payload['exp']));
+        }
 
-		public static function deleteTokenCookie() {
-			setcookie(self::COOKIE_NAME, "", time() - 3600);
-		}
+        public static function getTokenCookie() {
+            $value = $_COOKIE[self::COOKIE_NAME] ?? null;
+            return is_string($value) && $value !== '' ? $value : null;
+        }
 
-		public static function isTokenCookieValid() {
+        public static function deleteTokenCookie() {
+            setcookie(self::COOKIE_NAME, '', self::options(time() - 3600));
+            unset($_COOKIE[self::COOKIE_NAME]);
+        }
 
-			$token = self::getTokenCookie();
-			if ($token === null) {
-				return null;
-			}
+        public static function setSessionCookie($value) {
+            return setcookie(session_name(), $value, self::options(0));
+        }
 
-			return JWTManager::verifyJWT($token);
-		}
+        public static function deleteSessionCookie() {
+            setcookie(session_name(), '', self::options(time() - 3600));
+            unset($_COOKIE[session_name()]);
+        }
 
-
-	}
-
-
+        public static function isTokenCookieValid() {
+            return JWTManager::verifyAuthToken(self::getTokenCookie(), true);
+        }
+    }
 
 	class JWTManager {
 
@@ -807,14 +1088,10 @@
 		protected const JWT_CNF_FILE = "web.conf";
 		protected static $secret;
 
-		private static function getSecret(){
-			if (!isset(self::$secret)){
-				$config = parse_ini_file(self::JWT_CNF_FILE, true);
-				self::$secret = $config['secret'];
-			}
-			return self::$secret;
-		}
-
+        private static function getSecret() {
+            if (!isset(self::$secret)) { self::$secret = CONFIG['secret'] ?? ''; }
+            return self::$secret;
+        }
 
 		public static function base64UrlEncode($data) {
 			return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
@@ -833,23 +1110,34 @@
 			return "$header.$payloadEncoded.$signature";
 		}
 		
-		public static function verifyJWT($token) {
-			$parts = explode('.', $token);
-			if (count($parts) !== 3) return null;
-		
-			list($header, $payload, $signature) = $parts;
-			$decodedPayload = json_decode(self::base64UrlDecode($payload), true);
-		
-			if (isset($decodedPayload['exp']) && time() > $decodedPayload['exp']) return null;
-		
-			$expectedSignature = self::base64UrlEncode(hash_hmac('sha256', "$header.$payload", self::getSecret(), true));
-			return hash_equals($expectedSignature, $signature) ? $decodedPayload : null;
-		}
+        public static function verifyJWT($token) {
+            if (!is_string($token) || strlen($token) > 8192) { return null; }
+            $parts = explode('.', $token);
+            if (count($parts) !== 3) { return null; }
+            foreach ($parts as $part) { if (!preg_match('/^[A-Za-z0-9_-]+$/D', $part)) { return null; } }
+            list($header, $payload, $signature) = $parts;
+            $decodedHeader = json_decode(self::base64UrlDecode($header), true);
+            $decodedPayload = json_decode(self::base64UrlDecode($payload), true);
+            if (!is_array($decodedHeader) || ($decodedHeader['alg'] ?? null) !== 'HS256'
+                || (isset($decodedHeader['typ']) && $decodedHeader['typ'] !== 'JWT') || !is_array($decodedPayload)
+                || !isset($decodedPayload['exp']) || !is_int($decodedPayload['exp']) || $decodedPayload['exp'] <= time()) { return null; }
+            $secret = self::getSecret();
+            if (!is_string($secret) || $secret === '') { return null; }
+            $expected = self::base64UrlEncode(hash_hmac('sha256', "$header.$payload", $secret, true));
+            return hash_equals($expected, $signature) ? $decodedPayload : null;
+        }
 
+        public static function verifyAuthToken($token, $isRefresh) {
+            $payload = self::verifyJWT($token);
+            if ($payload === null || ($payload[self::IS_REFRESH] ?? null) !== ($isRefresh ? 1 : 0)) { return null; }
+            $id = $payload['id'] ?? null;
+            $acl = $payload['acl'] ?? null;
+            if ((!is_int($id) && !is_string($id)) || !preg_match('/^[1-9][0-9]*$/D', (string) $id)
+                || (!is_int($acl) && !is_string($acl)) || !in_array((string) $acl, array('1','2','3','4'), true)) { return null; }
+            return $payload;
+        }
+    }
 
-
-
-	}
 
 	class Paging{
 
@@ -934,6 +1222,12 @@
 
 	class IDConstants {
 		const LOC_TRANSPORT_TYPE = 1;
+		const LOC_CONSTRUCTION_SITE_TYPE = 2;
+		const LOC_WAREHOUSE_TYPE = 3;
+
+		const EQ_STATUS_READY = 1;
+		const EQ_STATUS_NEEDS_SERVICE = 2;
+		const EQ_STATUS_IN_SERVICE = 3;
 
 		const USER_ADMIN = 1;
 		const USER_OWNER = 2;
@@ -992,6 +1286,18 @@
 			return $data;
 		}
 
+        public static function validateAuthResponse($res, $refreshToken=null) {
+            if (!is_array($res) || ($res[self::CODE] ?? null) !== 200 || !is_array($res[self::DATA] ?? null)) { return null; }
+            $data = $res[self::DATA];
+            if (($data[self::ERR] ?? null) !== 0) { return null; }
+            $accessToken = $data[self::TOKEN] ?? null;
+            if ($refreshToken === null) { $refreshToken = $data[self::RF_TOKEN] ?? null; }
+            $access = JWTManager::verifyAuthToken($accessToken, false);
+            $refresh = JWTManager::verifyAuthToken($refreshToken, true);
+            if ($access === null || $refresh === null || (string) $access['id'] !== (string) $refresh['id']) { return null; }
+            return array(self::USER_KY => $access, self::TOKEN => $accessToken, self::RF_TOKEN => $refreshToken);
+        }
+
 		public static function callLogin($username, $password) {
 
 			$data = array(
@@ -1002,191 +1308,170 @@
 			return $res;
 		}
 
-		public static function callRefresh(){
-			$token = CookieManager::getTokenCookie();
-			if ($token === null) {
-				return null;
-			}
+        const CONNECT_TIMEOUT_MS = 3000;
+        const REQUEST_TIMEOUT_MS = 10000;
+        const DEADLINE_MS = 20000;
 
-			$curl = curl_init();
+        private static function limit($key, $default) {
+            $configured = filter_var(CONFIG[$key] ?? $default, FILTER_VALIDATE_INT);
+            return $configured !== false && $configured > 0 ? min($configured, $default) : $default;
+        }
 
-			curl_setopt_array($curl, array(
-				CURLOPT_URL => self::API_URL .self::CALL_ENDPOINT. self::REFRESH_ENDPOINT,
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_ENCODING => '',
-				CURLOPT_MAXREDIRS => 10,
-				CURLOPT_TIMEOUT => 0,
-				CURLOPT_FOLLOWLOCATION => true,
-				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-				CURLOPT_CUSTOMREQUEST => "POST",
-				CURLOPT_POST => true,
-				CURLOPT_HTTPHEADER => array(
-					'Authorization: Bearer '.$token,
-				),
-			));
+        private static function clockMs() { return hrtime(true) / 1000000; }
+        private static function deadline() { return self::clockMs() + self::limit('api_deadline_ms', self::DEADLINE_MS); }
 
-			//TODO: remove this in production
-			curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        private static function failure($code, $kind, $unknown=false) {
+            return array(self::CODE => $code, self::DATA => null, 'kind' => $kind, 'outcome_unknown' => $unknown);
+        }
 
-		
-			$response = curl_exec($curl);
-			$http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-			curl_close($curl);
-		
-			$response = trim($response);
-			$data = json_decode($response, true);
+        // HTTPS is the default; the explicit HTTP development exception never weakens TLS verification.
+        private static function transportPolicy() {
+            $base = self::API_URL;
+            if (!is_string($base) || preg_match('/[\x00-\x20\x7f]/', $base)
+                || filter_var($base, FILTER_VALIDATE_URL) === false) { return null; }
+            $parts = parse_url($base);
+            if (!is_array($parts) || !isset($parts['scheme'], $parts['host'])
+                || isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) || isset($parts['fragment'])
+                || (isset($parts['port']) && $parts['port'] < 1)) { return null; }
+            $scheme = strtolower($parts['scheme']);
+            $host = strtolower($parts['host']);
+            $exception = CONFIG['api_allow_http_development'] ?? false;
+            $allowDevelopmentHTTP = (is_bool($exception) || is_string($exception) || is_int($exception))
+                && filter_var($exception, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true;
+            $loopback = $scheme === 'http' && $allowDevelopmentHTTP && in_array($host, array('127.0.0.1', '[::1]', 'localhost'), true);
+            if ($scheme !== 'https' && !($scheme === 'http' && $allowDevelopmentHTTP)) { return null; }
+            $ca = CONFIG['api_ca_file'] ?? '';
+            if (!is_string($ca) || strpos($ca, "\0") !== false) { return null; }
+            if ($ca !== '') {
+                if ($ca[0] !== '/') { $ca = __DIR__ . '/' . $ca; }
+                if (!is_file($ca) || !is_readable($ca)) { return null; }
+            }
+            return array('base' => rtrim($base, '/'), 'protocol' => $scheme, 'ca_file' => $ca,
+                'loopback' => $loopback, 'localhost_port' => $loopback && $host === 'localhost' ? ($parts['port'] ?? 80) : null);
+        }
 
-			return [self::DATA => $data, self::CODE => $http_code];
+        // One bounded attempt. Family-specific validators interpret JSON result flags.
+        private static function execute($family, $endpoint, $method, $data, $token, $deadline) {
+            $remaining = (int) floor($deadline - self::clockMs());
+            if ($remaining <= 0) { return self::failure(504, 'timeout'); }
+            $timeout = min($remaining, self::limit('api_timeout_ms', self::REQUEST_TIMEOUT_MS));
+            try { $policy = self::transportPolicy(); } catch (\Throwable $ignored) { $policy = null; }
+            if ($policy === null) {
+                Diagnostics::event('api_configuration_failed', array('endpoint' => $endpoint, 'status' => 502));
+                return self::failure(502, 'configuration');
+            }
+            $url = $policy['base'] . '/' . $family . $endpoint;
+            if ($method === 'GET' && count($data) !== 0) { $url .= '?' . http_build_query($data); }
+            $headers = array('Accept: application/json');
+            if ($token !== null) { $headers[] = 'Authorization: Bearer ' . $token; }
+            $curl = curl_init();
+            curl_setopt_array($curl, array(CURLOPT_URL => $url, CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CONNECTTIMEOUT_MS => min($timeout, self::limit('api_connect_timeout_ms', self::CONNECT_TIMEOUT_MS)),
+                CURLOPT_TIMEOUT_MS => $timeout, CURLOPT_FOLLOWLOCATION => false,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1, CURLOPT_CUSTOMREQUEST => $method));
+            curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
+            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, true);
+            if (defined('CURLOPT_PROTOCOLS_STR')) { curl_setopt($curl, constant('CURLOPT_PROTOCOLS_STR'), $policy['protocol']); }
+            else { curl_setopt($curl, CURLOPT_PROTOCOLS, $policy['protocol'] === 'http' ? CURLPROTO_HTTP : CURLPROTO_HTTPS); }
+            if ($policy['ca_file'] !== '') { curl_setopt($curl, CURLOPT_CAINFO, $policy['ca_file']); }
+            if ($policy['loopback']) {
+                // Keep loopback development URLs local, including when proxy/DNS settings change.
+                curl_setopt($curl, CURLOPT_PROXY, '');
+                if ($policy['localhost_port'] !== null) {
+                    curl_setopt($curl, CURLOPT_RESOLVE, array('localhost:' . $policy['localhost_port'] . ':127.0.0.1,[::1]'));
+                }
+            }
+            if ($method === 'POST') {
+                $headers[] = 'Content-Type: application/json';
+                curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+            }
+            curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+            $started = self::clockMs();
+            $response = curl_exec($curl);
+            $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $errno = curl_errno($curl);
+            curl_close($curl);
+            Diagnostics::event('api_request', array('endpoint' => $endpoint, 'status' => $status,
+                'curl_errno' => $errno, 'elapsed_ms' => (int) (self::clockMs() - $started)));
+            if ($response === false) {
+                return self::failure($errno === CURLE_OPERATION_TIMEDOUT ? 504 : 502,
+                    $errno === CURLE_OPERATION_TIMEDOUT ? 'timeout' : 'transport', $method === 'POST');
+            }
+            if ($status < 200 || ($status >= 300 && $status < 400) || $status > 599) {
+                return self::failure(502, 'protocol', $method === 'POST');
+            }
+            $decoded = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+                return self::failure(502, 'protocol', $method === 'POST');
+            }
+            return array(self::CODE => $status, self::DATA => $decoded, 'kind' => 'http', 'outcome_unknown' => false);
+        }
 
-		}
+        public static function callRefresh($deadline=null, $refreshToken=null) {
+            $token = $refreshToken ?? CookieManager::getTokenCookie();
+            if (JWTManager::verifyAuthToken($token, true) === null) { return self::failure(401, 'auth'); }
+            return self::execute(self::CALL_ENDPOINT, self::REFRESH_ENDPOINT, 'POST', array(), $token, $deadline ?? self::deadline());
+        }
 
-		public static function callJWTCheck(){
-			$token = CookieManager::getTokenCookie();
-			if ($token === null) {
-				return null;
-			}
+        public static function callJWTCheck() {
+            $token = CookieManager::getTokenCookie();
+            if (JWTManager::verifyAuthToken($token, true) === null) { return self::failure(401, 'auth'); }
+            return self::execute(self::CALL_ENDPOINT, self::JWT_LOGIN_ENDPOINT, 'POST', array(), $token, self::deadline());
+        }
 
-			$curl = curl_init();
+        private static function authRejected($result) {
+            return $result[self::CODE] === 401 && $result['kind'] === 'http'
+                && (($result[self::DATA]['RC'] ?? null) === 401
+                    || ($result[self::DATA]['message'] ?? null) === 'No token in header.');
+        }
 
-			curl_setopt_array($curl, array(
-				CURLOPT_URL => self::API_URL .self::CALL_ENDPOINT. self::JWT_LOGIN_ENDPOINT,
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_ENCODING => '',
-				CURLOPT_MAXREDIRS => 10,
-				CURLOPT_TIMEOUT => 0,
-				CURLOPT_FOLLOWLOCATION => true,
-				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-				CURLOPT_CUSTOMREQUEST => "POST",
-				CURLOPT_POST => true,
-				CURLOPT_HTTPHEADER => array(
-					'Authorization: Bearer '.$token,
-				),
-			));
+        public static function callAPIProtected($endpoint, $method, $data, $is_retry=false) {
+            $deadline = self::deadline();
+            $context = SessionMgmt::capture();
+            if ($context === null) { return self::failure(401, 'auth'); }
+            if ($context['as_user'] !== null) {
+                $data[self::AS_USER_KY] = $context['as_user']['id'];
+                Diagnostics::event('impersonation', array('endpoint' => $endpoint));
+            }
+            $token = $context['token'];
+            SessionMgmt::close();
+            $result = self::execute(self::PROTECTED_ENDPOINT, $endpoint, $method, $data, $token, $deadline);
+            if (!self::authRejected($result) || $is_retry) { return $result; }
+            if (!SessionMgmt::reopen($context)) { return self::failure(401, 'auth'); }
+            if (SessionMgmt::getAcToken() === $token) {
+                $refresh = self::callRefresh($deadline, $context['refresh']);
+                $validated = self::validateAuthResponse($refresh, $context['refresh']);
+                if ($validated === null || (string) $validated[self::USER_KY]['id'] !== (string) $context['user_id']) {
+                    $code = $refresh[self::CODE];
+                    Diagnostics::event('refresh_failed', array('status' => $code));
+                    if (in_array($code, array(401, 403), true)) { SessionMgmt::destroy(); }
+                    else { SessionMgmt::close(); }
+                    return self::failure($code === 200 ? 502 : $code, $code === 504 ? 'timeout' : 'auth');
+                }
+                SessionMgmt::setAcToken($validated[self::TOKEN]);
+                SessionMgmt::setRegister(SessionMgmt::SYUSER_KY, $validated[self::USER_KY]);
+                SessionMgmt::setRegister(SessionMgmt::SYACL_KY, $validated[self::USER_KY][self::ACL_KY]);
+                Diagnostics::event('access_refreshed', array('status' => 200));
+            }
+            $token = SessionMgmt::getAcToken();
+            SessionMgmt::close();
+            $retry = self::execute(self::PROTECTED_ENDPOINT, $endpoint, $method, $data, $token, $deadline);
+            if (self::authRejected($retry)) { SessionMgmt::invalidate($context, $token); }
+            return $retry;
+        }
 
-			//TODO: remove this in production
-			curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+        public static function callAPI($endpoint, $method, $data) {
+            return self::execute($endpoint === self::PING_ENDPOINT ? '' : self::CALL_ENDPOINT, $endpoint,
+                $method, $data, null, self::deadline());
+        }
 
-		
-			$response = curl_exec($curl);
-			$http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-			curl_close($curl);
-		
-			$response = trim($response);
-			$data = json_decode($response, true);
-
-			return [self::DATA => $data, self::CODE => $http_code];
-
-		}
-
-
-		public static function callAPIProtected($endpoint, $method, $data, $is_retry=false) {
-			$token = SessionMgmt::getAcToken();
-			if ($token === null) {
-				return null;
-			}
-
-			$asUser = SessionMgmt::getAsUser();
-			if ($asUser !== null) {
-				$data[APIManager::AS_USER_KY] = $asUser['id'];
-				error_log("DOING AS USER");
-			}
-
-			$url = self::API_URL .self::PROTECTED_ENDPOINT .$endpoint;
-			if ($method === 'GET' && count($data) != 0) {
-				$url .= '?'.http_build_query($data);
-			}
-
-			$curl = curl_init();
-
-			curl_setopt_array($curl, array(
-				CURLOPT_URL => $url,
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_ENCODING => '',
-				CURLOPT_MAXREDIRS => 10,
-				CURLOPT_TIMEOUT => 0,
-				CURLOPT_FOLLOWLOCATION => true,
-				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-				CURLOPT_CUSTOMREQUEST => $method,
-				CURLOPT_HTTPHEADER => array(
-					'Authorization: Bearer '.$token,
-				),
-			  ));
-
-			//TODO: remove this in production
-			curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-
-
-			if ($method === 'POST') {
-				curl_setopt($curl, CURLOPT_POST, true);
-				curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
-			}
-		
-			$response = curl_exec($curl);
-			$http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-			curl_close($curl);
-		
-			$response = trim($response);
-			$res_data = json_decode($response, true);
-
-
-			if(!$is_retry && $http_code == 401){
-				$token = APIManager::callRefresh();
-				error_log(print_r($token, true));
-				if (!$token[APIManager::DATA][APIManager::ERR]){
-					$ac_token = $token[APIManager::DATA][APIManager::TOKEN];
-					SessionMgmt::setAcToken($ac_token);
-					return self::callAPIProtected($endpoint, $method,$data,true);
-				}
-			}
-
-			return [self::DATA => $res_data, self::CODE => $http_code];
-
-
-		}
-
-		public static function callAPI($endpoint, $method, $data) {
-			$curl = curl_init();
-
-			$url = self::API_URL .self::CALL_ENDPOINT .$endpoint;
-			if ($method == "GET" && count($data) != 0) {
-				$url .= '?'.http_build_query($data);
-			}
-
-			curl_setopt_array($curl, array(
-				CURLOPT_URL => $url,
-				CURLOPT_RETURNTRANSFER => true,
-				CURLOPT_ENCODING => '',
-				CURLOPT_MAXREDIRS => 10,
-				CURLOPT_TIMEOUT => 0,
-				CURLOPT_FOLLOWLOCATION => true,
-				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-				CURLOPT_CUSTOMREQUEST => $method,
-			  ));
-
-			//TODO: remove this in production
-			curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
-			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-
-
-			if ($method == "POST") {
-				curl_setopt($curl, CURLOPT_POST, true);
-				curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
-			}
-		
-			$response = curl_exec($curl);
-			$http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-			curl_close($curl);
-		
-			$response = trim($response);
-			$res_data = json_decode($response, true);
-
-			return [self::DATA => $res_data, self::CODE => $http_code];
-
-
-		}
+        public static function mutationStatus($result) {
+            $code = $result[self::CODE] ?? 502;
+            if ($code !== 200) { return is_int($code) && $code >= 400 && $code <= 599 ? $code : 502; }
+            $data = $result[self::DATA] ?? null;
+            if (!is_array($data) || !isset($data[self::ERR]) || !is_int($data[self::ERR])) { return 502; }
+            return $data[self::ERR] === 1 ? 200 : ($data[self::ERR] === 0 ? 409 : 502);
+        }
 
 	}
 
@@ -1473,4 +1758,3 @@
 
 
 ?>
- 

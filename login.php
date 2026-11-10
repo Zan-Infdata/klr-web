@@ -4,6 +4,8 @@
    use klr\Lang;
 
    use klr\ReqURI;
+   use klr\Output;
+   use klr\Csrf;
    use klr\SessionMgmt;
 
    //check if it is a bad login BEFORE destroying SESSION
@@ -22,6 +24,7 @@
    echo "    <head>";
    
    echo "      <meta charset='utf-8'>";
+   echo "      <meta name='csrf-token' content='".Output::html(Csrf::token())."'>";
    echo "      <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>";
    echo "      <meta name='description' content='".Environment::META_DESC."'>";
    echo "      <meta name='author' content='".Environment::META_AUTH."'>";
@@ -86,6 +89,8 @@
   echo "               </div> ";
   echo "               <div class='card-body'> ";
   echo "                 <form role='form' class='text-start' action= '". $authUrl ."' method='POST'> ";
+  echo "                   <input type='hidden' name='action' value='login'>";
+  echo "                   <input type='hidden' name='csrf_token' value='".Output::html(Csrf::token())."'>";
   echo "                   <div class='input-group input-group-outline my-3'> ";
   echo "                     <label class='form-label'>".Lang::getRsrc('login','usrL')."</label> ";
   echo "                     <input type='text' name='".$uInput."' id='".$uInput."' class='form-control'> ";
@@ -99,15 +104,15 @@
   // echo "                     <label class='form-check-label mb-0 ms-2' for='rememberMe'>Remember me</label> ";
   // echo "                   </div> ";
   echo "                   <div class='text-center'> ";
-  echo "                     <button type='şubmit' class='btn bg-gradient-primary w-100 my-4 mb-2'>".Lang::getRsrc('login','logB')."</button> ";
+  echo "                     <button type='submit' class='btn bg-gradient-primary w-100 my-4 mb-2'>".Lang::getRsrc('login','logB')."</button> ";
   echo "                   </div> ";
   if(!empty($failCheck)){
  
-    echo "<p class='loginError'>".Lang::getRsrc('login','errTtl')." ". $failCheck ."</p>";
+    echo "<p class='loginError'>".Lang::getRsrc('login','errTtl')." ". Output::html($failCheck) ."</p>";
 
   }
   echo "                   <p class='mt-4 text-sm text-center'> ";
-  echo "                     ". $failCheck ." ";
+  echo "                     ". Output::html($failCheck) ." ";
   echo "                   </p> ";
   
   
@@ -149,6 +154,7 @@
 
 
    echo Environment::$JQRY_JS_SRC ;
+   echo "<script>installCsrfAjax();</script>";
    echo Environment::$BOOT_JS_SRC ;
    echo Environment::$POOPER_JS_SRC ;
 

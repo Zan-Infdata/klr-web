@@ -1,6 +1,20 @@
 <?php
 use klr\Environment;
 use klr\AjaxManager;
+use klr\Lang;
+use klr\IDConstants;
+
+$filterLabels = array();
+foreach (array('uuid', 'name', 'clear', 'count', 'empty', 'loading', 'failed', 'selectTransport') as $key) {
+    $filterLabels[$key] = Lang::getRsrc('equipmentList', $key);
+}
+
+$serviceStatuses = array(
+    IDConstants::EQ_STATUS_READY => array('className' => 'bg-success', 'label' => Lang::getRsrc('equipmentList', 'serviceReady')),
+    IDConstants::EQ_STATUS_NEEDS_SERVICE => array('className' => 'bg-danger', 'label' => Lang::getRsrc('equipmentList', 'serviceNeedsService')),
+    IDConstants::EQ_STATUS_IN_SERVICE => array('className' => 'bg-warning', 'label' => Lang::getRsrc('equipmentList', 'serviceInService')),
+    'unknown' => array('className' => 'bg-secondary', 'label' => Lang::getRsrc('equipmentList', 'serviceUnknown')),
+);
 
 echo "    <div class='row'> ";
 echo "        <div class='col-md-6 col-sm-12'> ";
@@ -12,7 +26,7 @@ echo "              </div> ";
 echo "            </div> ";
 echo "            <div class='card-body px-0 pb-2'> ";
 echo "              <div class='table-responsive p-0'> ";
-echo "                <table class='table align-items-center mb-0'> ";
+echo "                <table class='table align-items-center mb-0 mobile-list-table'> ";
 echo "                  <thead> ";
 echo "                    <tr> ";
 echo "                      <th class='text-uppercase text-secondary text-xxs font-weight-bolder opacity-7'>Author</th> ";
@@ -101,14 +115,29 @@ echo "                <h6 class='text-white text-capitalize ps-3'>Equipment tabl
 echo "              </div> ";
 echo "            </div> ";
 echo "            <div class='card-body px-0 pb-2'> ";
+echo "              <fieldset id='eq-list-filters' class='equipment-list-filters border-0 px-3 pt-3 pb-2 m-0' disabled> ";
+echo "                <div class='row g-3'> ";
+echo "                  <div class='col-12 col-md-6'> ";
+echo "                    <label class='form-label mb-1' for='eq-filter-uuid'>".htmlspecialchars($filterLabels['uuid'], ENT_QUOTES, 'UTF-8')."</label> ";
+echo "                    <input id='eq-filter-uuid' type='search' class='form-control px-2' autocomplete='off' spellcheck='false'> ";
+echo "                  </div> ";
+echo "                  <div class='col-12 col-md-6'> ";
+echo "                    <label class='form-label mb-1' for='eq-filter-name'>".htmlspecialchars($filterLabels['name'], ENT_QUOTES, 'UTF-8')."</label> ";
+echo "                    <input id='eq-filter-name' type='search' class='form-control px-2' autocomplete='off'> ";
+echo "                  </div> ";
+echo "                </div> ";
+echo "                <div class='d-flex justify-content-end mt-2'> ";
+echo "                  <button id='eq-filter-clear' type='button' class='btn btn-outline-secondary btn-sm mb-0'>".htmlspecialchars($filterLabels['clear'], ENT_QUOTES, 'UTF-8')."</button> ";
+echo "                </div> ";
+echo "              </fieldset> ";
+echo "              <p id='eq-filter-count' class='text-sm text-secondary px-3 mb-2' role='status' aria-live='polite'>".htmlspecialchars($filterLabels['selectTransport'], ENT_QUOTES, 'UTF-8')."</p> ";
 echo "              <div class='table-responsive p-0'> ";
-echo "                <table class='table align-items-center mb-0'> ";
+echo "                <table class='table align-items-center mb-0 mobile-list-table'> ";
 echo "                  <thead> ";
 echo "                    <tr> ";
-echo "                      <th class='text-uppercase text-secondary text-xxs font-weight-bolder opacity-7'>Author</th> ";
-echo "                      <th class='text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2'>Function</th> ";
-echo "                      <th class='text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7'>Status</th> ";
-echo "                      <th class='text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7'>Employed</th> ";
+echo "                      <th class='text-secondary opacity-7'></th> ";
+echo "                      <th class='text-uppercase text-secondary text-xxs font-weight-bolder opacity-7'>Name</th> ";
+echo "                      <th class='text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2'>UUID</th> ";
 echo "                      <th class='text-secondary opacity-7'></th> ";
 echo "                    </tr> ";
 echo "                  </thead> ";
@@ -126,6 +155,10 @@ echo "        </div> ";
 echo " <script> ";
 
 echo " var transportData = null; ";
+echo " let equipmentRows = []; ";
+echo " let equipmentLoadId = 0; ";
+echo " const equipmentServiceStatuses = ".json_encode($serviceStatuses, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)."; ";
+echo " const equipmentFilterLabels = ".json_encode($filterLabels, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)."; ";
 
 echo "      function getMyTransportData() { ";
 echo "        let req = {};  ";
@@ -140,19 +173,17 @@ echo "              dataType: 'json', ";
 echo "              success: function(data){  ";
 echo "                 const code = data.CODE; ";
 echo "                 const transData = data.DATA; ";
-echo "                 if(code == 200){ ";
+echo "                 if(code === 200){ ";
 echo "                     generateTransportRows(transData); ";
 echo "                 } ";
 echo "                 else if(code == 401){ ";
-echo "                     redirectToLogin(); ";
+echo "                     return redirectToLogin(); ";
 echo "                 } ";
 echo "              }, ";
 echo "              error: function(xhr,opts,err){  ";
 
-if (Environment::DEBUG){
-    echo "                  alert(xhr.responseText + ':' + err); ";
-    echo "                  console.log(xhr.responseText + ':' + err); ";
-} // if
+    echo "                  ajaxFailure(xhr); ";
+
 
 echo "              } ";
 echo "         } ); ";	
@@ -161,6 +192,11 @@ echo "      } ";
 // page ready funciton
 echo "      $(document).ready( function() { ";
 echo "         getMyTransportData();";
+echo "         $('#eq-filter-uuid, #eq-filter-name').on('input', filterEquipmentRows); ";
+echo "         $('#eq-filter-clear').on('click', function() { ";
+echo "             $('#eq-filter-uuid, #eq-filter-name').val(''); ";
+echo "             filterEquipmentRows(); ";
+echo "         }); ";
 echo "      }) ; ";
 
 
@@ -172,15 +208,34 @@ echo "        parent.append(transCard.card); ";
 echo "    }";
 echo " }";
 
-echo " function generateEquipmentRows(data){";
-echo "    const parent = $('#eq-tbl'); ";
-echo "    parent.empty(); ";
-echo "    for (i in data){";
-echo "        const eqCard = getEquipmentRow(data[i], leaveHandler, false);";
-echo "        parent.append(eqCard.card); ";
-echo "    }";
-echo " }";
-
+echo " function generateEquipmentRows(data) { ";
+echo "     const parent = $('#eq-tbl').empty(); ";
+echo "     equipmentRows = []; ";
+echo "     data.forEach(function(item) { ";
+echo "         const eqCard = getEquipmentRow(item, leaveHandler, false, equipmentServiceStatuses); ";
+echo "         equipmentRows.push({row: eqCard.card, uuid: String(item.uuid || '').toLowerCase(), name: String(item.name || '').toLowerCase()}); ";
+echo "         parent.append(eqCard.card); ";
+echo "     }); ";
+echo "     const emptyRow = $('<tr>').attr('id', 'eq-filter-empty'); ";
+echo "     emptyRow.append($('<td>').attr('colspan', 4).addClass('text-center text-sm text-secondary py-4').text(equipmentFilterLabels.empty)); ";
+echo "     parent.append(emptyRow); ";
+echo "     $('#eq-list-filters').prop('disabled', false); ";
+echo "     filterEquipmentRows(); ";
+echo " } ";
+echo "  ";
+echo " function filterEquipmentRows() { ";
+echo "     const uuid = $('#eq-filter-uuid').val().trim().toLowerCase(); ";
+echo "     const name = $('#eq-filter-name').val().trim().toLowerCase(); ";
+echo "     let shown = 0; ";
+echo "     equipmentRows.forEach(function(item) { ";
+echo "         const matches = item.uuid.includes(uuid) && item.name.includes(name); ";
+echo "         item.row.toggleClass('d-none', !matches); ";
+echo "         if (matches) { shown += 1; } ";
+echo "     }); ";
+echo "     $('#eq-filter-empty').toggleClass('d-none', shown !== 0); ";
+echo "     $('#eq-filter-count').text(equipmentFilterLabels.count.replace('{shown}', shown).replace('{total}', equipmentRows.length)); ";
+echo " } ";
+echo "  ";
 echo " function leaveHandler(data){";
 
 echo "   let req = {};  ";
@@ -189,31 +244,18 @@ echo "   req.ELEM = data.uuid;    ";
 echo "   req.PRNT_FROM = transportData.uuid;    ";
 echo "   req.PRNT_TO = transportData.parentUuid;    ";
 
-echo "   $.ajax({ ";
-echo "       url: '".$mdUpdateURL."', ";
-echo "       method: 'POST', ";
-echo "       data: { req: req }, ";
-echo "       dataType: 'json', ";
-echo "       success: function(data) { ";
-echo "           const code = data.CODE; ";
-echo "           if(code == 200){ ";
-echo "               chooseHandler(transportData); ";
-echo "           } ";
-echo "           if(code == 401){ ";
-echo "               redirectToLogin(); ";
-echo "           } ";
-echo "       }, ";
-echo "       error: function(xhr, status, error) { ";
-echo "           console.error('API call failed:', error); ";
-echo "           alert('Failed to process request. Please try again.'); ";
-echo "       } ";
-echo "   }); ";
+echo "   return submitMutation('".$mdUpdateURL."', req, function() { chooseHandler(transportData); }); ";
 
 echo " }";
 
 echo " function chooseHandler(data){ ";
 
 echo "   transportData = data;";
+echo "   const loadId = ++equipmentLoadId; ";
+echo "   equipmentRows = []; ";
+echo "   $('#eq-tbl').empty(); ";
+echo "   $('#eq-list-filters').prop('disabled', true); ";
+echo "   $('#eq-filter-count').text(equipmentFilterLabels.loading); ";
 
 echo "   let req = {};  ";
 echo "   req.MD = '".AjaxManager::MD_LOC_EQ_ON_LOC_GET."';    ";
@@ -226,19 +268,22 @@ echo "       method: 'POST', ";
 echo "       data: { req: req }, ";
 echo "       dataType: 'json', ";
 echo "       success: function(data) { ";
-echo "           console.log(data); ";
+echo "           if (loadId !== equipmentLoadId) { return; } ";
 echo "           const code = data.CODE; ";
 echo "           const eqData = data.DATA; ";
-echo "           if(code == 200){ ";
+echo "           if(code === 200){ ";
 echo "               generateEquipmentRows(eqData); ";
 echo "           } ";
 echo "           else if(code == 401){ ";
-echo "               redirectToLogin(); ";
+echo "               return redirectToLogin(); ";
 echo "           } ";
+echo "           else { $('#eq-filter-count').text(equipmentFilterLabels.failed); } ";
 echo "       }, ";
 echo "       error: function(xhr, status, error) { ";
-echo "           console.error('API call failed:', error); ";
-echo "           alert('Failed to process request. Please try again.'); ";
+echo "           if (loadId !== equipmentLoadId) { return; } ";
+echo "           $('#eq-filter-count').text(equipmentFilterLabels.failed); ";
+echo "            ";
+echo "           ajaxFailure(xhr); ";
 echo "       } ";
 echo "   }); ";
 

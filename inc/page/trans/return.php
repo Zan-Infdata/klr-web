@@ -23,19 +23,17 @@ echo "              dataType: 'json', ";
 echo "              success: function(data){  ";
 echo "                 const code = data.CODE; ";
 echo "                 const transData = data.DATA; ";
-echo "                 if(code == 200){ ";
+echo "                 if(code === 200){ ";
 echo "                     generateTransportCards(transData); ";
 echo "                 } ";
 echo "                 else if(code == 401){ ";
-echo "                     redirectToLogin(); ";
+echo "                     return redirectToLogin(); ";
 echo "                 } ";
 echo "              }, ";
 echo "              error: function(xhr,opts,err){  ";
 
-if (Environment::DEBUG){
-    echo "                  alert(xhr.responseText + ':' + err); ";
-    echo "                  console.log(xhr.responseText + ':' + err); ";
-} // if
+    echo "                  ajaxFailure(xhr); ";
+
 
 echo "              } ";
 echo "         } ); ";	
@@ -61,23 +59,7 @@ echo "   let req = {};  ";
 echo "   req.MD = '".AjaxManager::MD_LOC_TRANS_RETURN."';    ";
 echo "   req.ELEM = data.uuid;    ";
 
-echo "   $.ajax({ ";
-echo "       url: '".$mdUpdateURL."', ";
-echo "       method: 'POST', ";
-echo "       data: { req: req }, ";
-echo "       dataType: 'json', ";
-echo "       success: function(response) { ";
-echo "           const code = response.CODE; ";
-echo "           if(code == 401){ ";
-echo "               redirectToLogin(); ";
-echo "           } ";
-echo "           window.location.reload(); ";
-echo "       }, ";
-echo "       error: function(xhr, status, error) { ";
-echo "           console.error('API call failed:', error); ";
-echo "           alert('Failed to process request. Please try again.'); ";
-echo "       } ";
-echo "   }); ";
+echo "   return submitMutation('".$mdUpdateURL."', req, function() { window.location.reload(); }); ";
 echo " }";
 
 

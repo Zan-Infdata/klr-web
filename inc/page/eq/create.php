@@ -78,19 +78,17 @@ echo "              dataType: 'json', ";
 echo "              success: function(data){  ";
 echo "                 const code = data.CODE; ";
 echo "                 const selectData = data.DATA; ";
-echo "                 if(code == 200){ ";
+echo "                 if(code === 200){ ";
 echo "                     generateSelectOptions(selectData, 'type-inp'); ";
 echo "                 } ";
 echo "                 else if(code == 401){ ";
-echo "                     redirectToLogin(); ";
+echo "                     return redirectToLogin(); ";
 echo "                 } ";
 echo "              }, ";
 echo "              error: function(xhr,opts,err){  ";
 
-if (Environment::DEBUG){
-    echo "                  alert(xhr.responseText + ':' + err); ";
-    echo "                  console.log(xhr.responseText + ':' + err); ";
-} // if
+    echo "                  ajaxFailure(xhr); ";
+
 
 echo "              } ";
 echo "         } ); ";	
@@ -109,19 +107,17 @@ echo "              dataType: 'json', ";
 echo "              success: function(data){  ";
 echo "                 const code = data.CODE; ";
 echo "                 const selectData = data.DATA; ";
-echo "                 if(code == 200){ ";
+echo "                 if(code === 200){ ";
 echo "                     generateSelectOptions(selectData, 'wrh-inp'); ";
 echo "                 } ";
 echo "                 else if(code == 401){ ";
-echo "                     redirectToLogin(); ";
+echo "                     return redirectToLogin(); ";
 echo "                 } ";
 echo "              }, ";
 echo "              error: function(xhr,opts,err){  ";
 
-if (Environment::DEBUG){
-    echo "                  alert(xhr.responseText + ':' + err); ";
-    echo "                  console.log(xhr.responseText + ':' + err); ";
-} // if
+    echo "                  ajaxFailure(xhr); ";
+
 
 echo "              } ";
 echo "         } ); ";	
@@ -168,6 +164,7 @@ echo " }";
 
 
 echo " $('#createBtn').on('click', function() { ";
+echo "   const \$actionButton = $(this); ";
 
 echo "   $('.form-control').removeClass('is-invalid');";
 echo "   let elemData = {};";
@@ -190,29 +187,7 @@ echo "   req.ELEM = elemData;    ";
 echo "   req.PRNT = wrhId;    ";
 echo "   req.TYPE = typeId;    ";
 
-echo "   $.ajax({ ";
-echo "       url: '".$mdCreateURL."', ";
-echo "       method: 'POST', ";
-echo "       data: { req: req }, ";
-echo "       dataType: 'json', ";
-echo "       success: function(response) { ";
-echo "            const code = response.CODE; ";
-echo "            const message = response.DATA; ";
-echo "            if(code == 200){ ";
-echo "                window.location.reload(); ";
-echo "            } ";
-echo "            else if(code == 401){ ";
-echo "                redirectToLogin(); ";
-echo "            } ";
-echo "            else { ";
-echo "                alert(message); ";
-echo "            } ";
-echo "       }, ";
-echo "       error: function(xhr, status, error) { ";
-echo "           console.error('API call failed:', error); ";
-echo "           alert('Failed to process request. Please try again.'); ";
-echo "       } ";
-echo "   }); ";
+echo "   return runButtonAction(\$actionButton, function() { return submitMutation('".$mdCreateURL."', req, function() { window.location.reload(); }); }); ";
 echo " });";
 
 

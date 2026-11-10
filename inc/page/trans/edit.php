@@ -3,12 +3,13 @@ use klr\Environment;
 use klr\AjaxManager;
 use klr\UUID;
 use klr\ReqURI;
+use klr\Output;
 
 echo " <div class='col-xl-4 col-lg-5 col-md-7 d-flex flex-column'> ";
 echo "     <div class='card card-plain'> ";
 echo "         <div class='card-header'> ";
 echo "             <h4 class='font-weight-bolder'>Edit Equipment</h4> ";
-echo "             <p class='mb-0'>".ReqURI::getID()."</p> ";
+echo "             <p class='mb-0'>".Output::html(ReqURI::getID())."</p> ";
 echo "         </div> ";
 echo "         <div class='card-body'> ";
 echo "             <form role='form'> ";
@@ -74,20 +75,18 @@ echo "              dataType: 'json', ";
 echo "              success: function(data){  ";
 echo "                 const code = data.CODE; ";
 echo "                 const selectData = data.DATA; ";
-echo "                 if(code == 200){ ";
+echo "                 if(code === 200){ ";
 echo "                     generateSelectOptions(selectData, 'wrh-inp'); ";
 echo "                     $('#wrh-inp').each(function() { $(this).closest('.input-group-outline').toggleClass('is-filled', this.value !== ''); }); ";
 echo "                 } ";
 echo "                 else if(code == 401){ ";
-echo "                     redirectToLogin(); ";
+echo "                     return redirectToLogin(); ";
 echo "                 } ";
 echo "              }, ";
 echo "              error: function(xhr,opts,err){  ";
 
-if (Environment::DEBUG){
-    echo "                  alert(xhr.responseText + ':' + err); ";
-    echo "                  console.log(xhr.responseText + ':' + err); ";
-} // if
+    echo "                  ajaxFailure(xhr); ";
+
 
 echo "              } ";
 echo "         } ); ";	
@@ -96,7 +95,7 @@ echo "      } ";
 echo "      function getTransportData() { ";
 echo "        let req = {};  ";
 echo "        req.MD = '".AjaxManager::MD_LOC_GET."';    ";
-echo "        req.ELEM = '".ReqURI::getID()."';    ";
+echo "        req.ELEM = ".Output::json(ReqURI::getID()).";    ";
 
 echo "        $.ajax( {  ";
 echo "              url:  '".$mdReadURL."', "; 
@@ -108,19 +107,17 @@ echo "              success: function(data){  ";
 echo "                 const code = data.CODE; ";
 echo "                 const trnsData = data.DATA; ";
 
-echo "                 if(code == 200){ ";
+echo "                 if(code === 200){ ";
 echo "                     fillData(trnsData); ";
 echo "                 } ";
 echo "                 else if(code == 401){ ";
-echo "                     redirectToLogin(); ";
+echo "                     return redirectToLogin(); ";
 echo "                 } ";
 echo "              }, ";
 echo "              error: function(xhr,opts,err){  ";
 
-if (Environment::DEBUG){
-    echo "                  alert(xhr.responseText + ':' + err); ";
-    echo "                  console.log(xhr.responseText + ':' + err); ";
-} // if
+    echo "                  ajaxFailure(xhr); ";
+
 
 echo "              } ";
 echo "         } ); ";	
@@ -172,11 +169,12 @@ echo " }";
 
 
 echo " $('#editBtn').on('click', function() { ";
+echo "   const \$actionButton = $(this); ";
 
 echo "   $('.form-control').removeClass('is-invalid');";
 echo "   let elemData = {};";
 
-echo "   elemData.uuid = '".ReqURI::getID()."'; ";
+echo "   elemData.uuid = ".Output::json(ReqURI::getID())."; ";
 echo "   elemData.code = $('#code-inp').val().trim(); ";
 echo "   elemData.name = $('#name-inp').val().trim(); ";
 echo "   elemData.desc = $('#desc-inp').val().trim(); ";
@@ -190,29 +188,7 @@ echo "   let req = {};  ";
 echo "   req.MD = '".AjaxManager::MD_LOC_UPDATE."';    ";
 echo "   req.ELEM = elemData;    ";
 
-echo "   $.ajax({ ";
-echo "       url: '".$mdUpdateURL."', ";
-echo "       method: 'POST', ";
-echo "       data: { req: req }, ";
-echo "       dataType: 'json', ";
-echo "       success: function(response) { ";
-echo "            const code = response.CODE; ";
-echo "            const message = response.DATA; ";
-echo "            if(code == 200){ ";
-echo "                window.location.reload(); ";
-echo "            } ";
-echo "            else if(code == 401){ ";
-echo "                redirectToLogin(); ";
-echo "            } ";
-echo "            else { ";
-echo "                alert(message); ";
-echo "            } ";
-echo "       }, ";
-echo "       error: function(xhr, status, error) { ";
-echo "           console.error('API call failed:', error); ";
-echo "           alert('Failed to process request. Please try again.'); ";
-echo "       } ";
-echo "   }); ";
+echo "   return runButtonAction(\$actionButton, function() { return submitMutation('".$mdUpdateURL."', req, function() { window.location.reload(); }); }); ";
 echo " });";
 
 

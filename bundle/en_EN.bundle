@@ -30,6 +30,7 @@ retry = "Try again"
 close = "Close"
 
 [equipmentList]
+selectTransport = "Select a transport to view equipment."
 uuid = "UUID"
 name = "Equipment name"
 location = "Location"
@@ -43,6 +44,14 @@ count = "Showing {shown} of {total}"
 empty = "No equipment matches these filters."
 loading = "Loading equipment..."
 failed = "Failed to load equipment."
+serviceReady = "Ready"
+serviceNeedsService = "Needs service"
+serviceInService = "In service"
+serviceUnknown = "Unknown service status"
+locationWarehouses = "Warehouses"
+locationSites = "Work orders"
+locationTransports = "Transports"
+locationOther = "Other locations"
 
 ; ------------
 ; PHP Klr Web
@@ -132,6 +141,8 @@ topSrchPH = Search...
 
 topMenu91 = User Account
 topMenu92 = Logout
+openNavigation = Open navigation
+closeNavigation = Close navigation
 
 
 sideGroup1 = CORE
@@ -195,7 +206,7 @@ checkUpdate = Are you sure you want to change this article?
 checkAdd = Are you sure you want to add this article?
 nameError = Field is empty or longer than 25 characters
 
-inputError1 = Field mustn't be empty
+inputError1 = "Field mustn't be empty"
 inputError2 = Choose a customer
 inputError3 = Choose an article type
 inputError4 = Choose a size
@@ -223,7 +234,7 @@ checkUpdate = Are you sure you want to change this article type?
 checkAdd = Are you sure you want to add this article type?
 nameError = Field is empty or longer than 25 characters
 
-inputError1 = Field mustn't be empty
+inputError1 = "Field mustn't be empty"
 inputError2 = Choose a vendor
 inputError3 = Choose the textile
 
@@ -248,7 +259,7 @@ lab06 = IS ACTIVE:
 
 checkUpdate = Are you sure you want to change this vendor?
 checkAdd = Are you sure you want to add this vendor?
-inputError1 = Field mustn't be empty
+inputError1 = "Field mustn't be empty"
 
 
 [mdcntry]
@@ -269,7 +280,7 @@ lab06 = PREFIX ISO A3:
 
 checkUpdate = Are you sure you want to change this country?
 checkAdd = Are you sure you want to add this country?
-inputError1 = Field mustn't be empty
+inputError1 = "Field mustn't be empty"
 inputError2 = Please input two characters
 inputError3 = Please input three characters
 
@@ -302,7 +313,7 @@ lab12 = IS ACTIVE:
 
 checkUpdate = Are you sure you want to change this size?
 checkAdd = Are you sure you want to add this size?
-inputError = Field mustn't be empty
+inputError = "Field mustn't be empty"
 
 
 [mddmg]
@@ -325,7 +336,7 @@ lab07 = NAME SLO:
 
 checkUpdate = Are you sure you want to change this damage?
 checkAdd = Are you sure you want to add this damage?
-inputError = Field mustn't be empty
+inputError = "Field mustn't be empty"
 
 
 [mddmgtype]
@@ -348,7 +359,7 @@ lab07 = NAME SLO:
 
 checkUpdate = Are you sure you want to change this damage type?
 checkAdd = Are you sure you want to add this damage type?
-inputError = Field mustn't be empty
+inputError = "Field mustn't be empty"
 
 
 
@@ -382,7 +393,7 @@ lab16 = ARTICLE COUNT:
 
 checkUpdate = Are you sure you want to change this article type?
 checkAdd = Are you sure you want to add this article type?
-inputError = Field mustn't be empty
+inputError = "Field mustn't be empty"
 
 
 
@@ -413,7 +424,7 @@ lab13 = IS ACTIVE:
 
 checkUpdate = Are you sure you want to change this service vendor?
 checkAdd = Are you sure you want to add this service vendor?
-inputError = Field mustn't be empty
+inputError = "Field mustn't be empty"
 
 
 [mdsvcvndtype]
@@ -433,7 +444,7 @@ lab05 = IS ACTIVE:
 
 checkUpdate = Are you sure you want to change this service vendor type?
 checkAdd = Are you sure you want to add this service vendor type?
-inputError = Field mustn't be empty
+inputError = "Field mustn't be empty"
 
 [two]
 col01 = ID
@@ -479,7 +490,7 @@ new = New work order
 checkUpdate = Are you sure you want to update this work order?
 checkFinish = Are you sure you want to finish this work order?
 checkAdd = Are you sure you want to add this work order?
-inputError1 = Field mustn't be empty
+inputError1 = "Field mustn't be empty"
 existsError1 = "There is already an open work order for this article!"
 
 
@@ -506,10 +517,16 @@ finishButton0 = Check
 
 
 [ajax]
-alrt0 = Request successful.
-alrt1 = ERROR: ACL clearance test. Your profile has no rights for this request.
-alrt2 = WARNING: Request was not successful - record is not updated
-alrt3 = WARNING: Request was not successful - record is not inserted
-alrt4 = WARNING: No update entity found
-alrt9 = ERROR: Request without parameters.
-alrtX = ERROR: Request process not successfull:
+csrfFailed = "Security check failed. Refresh the page and try again."
+authRequired = "Your session has ended. Please sign in again."
+badMethod = "This request method is not supported."
+unavailable = "The API is temporarily unavailable. Please try again."
+timeout = "The API request timed out. Please try again."
+unknownOutcome = "The request outcome is unknown. Check the current data before submitting again."
+alrt0 = "Request successful."
+alrt1 = "ERROR: ACL clearance test. Your profile has no rights for this request."
+alrt2 = "WARNING: Request was not successful - record is not updated"
+alrt3 = "WARNING: Request was not successful - record is not inserted"
+alrt4 = "WARNING: No update entity found"
+alrt9 = "ERROR: Request without parameters."
+alrtX = "ERROR: Request process not successfull:"
