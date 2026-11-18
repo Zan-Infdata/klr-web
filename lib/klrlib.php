@@ -850,6 +850,7 @@
 
         public static function changeAsUser($context, $user) {
             if (!self::reopen($context, true)) { return false; }
+            if ($user !== null && !self::isManagerAcl(self::getSyAcl())) { self::close(); return false; }
             if ($user === null) { unset($_SESSION[self::AS_USER_KY]); }
             else { $_SESSION[self::AS_USER_KY] = $user; }
             $_SESSION[self::CONTEXT_REVISION_KY] = $context['revision'] + 1;
@@ -953,7 +954,7 @@
 		} // getSyAclFromData
 
 		public static function isManagerAcl($aclId) {
-			return $aclId <= IDConstants::USER_MANAGER;
+			return in_array($aclId, array(IDConstants::USER_ADMIN, IDConstants::USER_OWNER, IDConstants::USER_MANAGER, '1', '2', '3'), true);
 		}
 
 

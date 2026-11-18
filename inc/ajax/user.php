@@ -10,6 +10,7 @@ $req = AjaxResponse::request();
 $context = SessionMgmt::capture();
 if ($context === null) { AjaxResponse::error(401); }
 if ($req['MD'] === AjaxManager::LOGIN_AS_USER) {
+    if (!SessionMgmt::isManagerAcl(SessionMgmt::getSyAcl())) { AjaxResponse::error(403); }
     if (!AjaxResponse::positiveId($req['ELEM'] ?? null)) { AjaxResponse::error(400); }
     $result = AjaxResponse::validateRead(APIRead::getUserById($req['ELEM']), false);
     $user = $result[APIManager::DATA][APIManager::DATA];

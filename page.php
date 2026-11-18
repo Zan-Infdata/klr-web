@@ -20,6 +20,13 @@ $mdDeleteURL = Environment::ROOT_URL."/ajax/delete/";
 $syUser = SessionMgmt::getSyUser() ;
 $syAcl = SessionMgmt::getSyAcl() ;
 $asUser = SessionMgmt::getAsUser() ;
+$canSignInAsUser = SessionMgmt::isManagerAcl($syAcl);
+if (!$canSignInAsUser && (ReqURI::$reqArray[\klr\URIinx::ENTITY] ?? null) === 'user'
+    && (ReqURI::$reqArray[\klr\URIinx::NOUN] ?? null) === 'change') {
+    http_response_code(403);
+    echo Output::html(Lang::getRsrc('ajax', 'alrt1'));
+    return;
+}
 
 //*<!--
 //*=========================================================
@@ -177,6 +184,7 @@ echo "       </li> ";
 echo "       <li class='nav-item' role='presentation'> ";
 echo "         <hr class='horizontal light mx-3 my-2'> ";
 echo "       </li> ";
+if ($canSignInAsUser) {
 echo "       <li class='nav-item'> ";
 echo "         <a class='nav-link text-white ' href='".Environment::ROOT_URL."/".ReqURI::URLMAP_PAGE_KY."/user/change'> ";
 echo "           <div class='text-white text-center me-2 d-flex align-items-center justify-content-center'> ";
@@ -185,6 +193,7 @@ echo "           </div> ";
 echo "           <span class='nav-link-text ms-1'>Sign In as User</span> ";
 echo "         </a> ";
 echo "       </li> ";
+}
 echo "       <li class='nav-item'> ";
 echo "         <form class='nav-link p-0' method='post' action='".Output::html($logoutUrl)."' id='logout-form'> ";
 echo "           <input type='hidden' name='action' value='logout'>";
