@@ -658,6 +658,18 @@ body.sb-nav-fixed {
   background-color: #FFFFFF;
 }
 
+.equipment-layout-modal #layout-teleport-context {
+  overflow-wrap: anywhere;
+}
+
+.equipment-layout-modal .layout-teleport-cell {
+  white-space: nowrap;
+}
+
+.eq-history-teleport {
+  color: var(--bs-dark);
+}
+
 .equipment-layout-modal .layout-equipment-uuid {
   white-space: normal;
   overflow-wrap: anywhere;

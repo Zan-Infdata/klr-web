@@ -39,13 +39,13 @@ function ajaxFailure(response, mutation=false) {
     alert(message);
 }
 
-function submitMutation(url, req, onSuccess) {
+function submitMutation(url, req, onSuccess, onFailure = response => ajaxFailure(response, true)) {
     return $.ajax({url: url, method: 'POST', data: {req: req}, dataType: 'json',
         success: function(response) {
             if (response && response.CODE === 200) { onSuccess(response); }
-            else { ajaxFailure(response, true); }
+            else { onFailure(response); }
         },
-        error: function(xhr) { ajaxFailure(xhr, true); }
+        error: onFailure
     });
 }
 
@@ -404,6 +404,7 @@ function getEquipmentListRow(cardData, urlpfx="", serviceStatuses={}, mobileLabe
 
     const href = getEquipmentEditUrl(cardData.uuid, urlpfx + 'edit/');
 
+    const atService = cardData.parent.typeId === mobileLabels.serviceType;
     const badge_class = cardData.parent.isWarehouse ? "bg-gradient-success" : "bg-gradient-warning";
     const status_txt = cardData.parent.isWarehouse ? "Stored" : "Taken";
 
@@ -439,6 +440,7 @@ function getEquipmentListRow(cardData, urlpfx="", serviceStatuses={}, mobileLabe
     $card.find('.equipment-code').text(cardData.code ?? '');
     $card.find('.equipment-uuid').text(cardData.uuid ?? '');
     $card.find('.mobile-list-location > span').text(cardData.parent.name ?? '');
+    if (atService && mobileLabels.serviceLocation) { $card.find('.badge').text(mobileLabels.serviceLocation); }
     if (href !== null) { $card.find('a.link-primary').attr('href', href); }
     else { $card.find('a.link-primary').attr('aria-disabled', 'true'); }
     $card.find('.mobile-list-location').attr('data-label', mobileLabels.location || 'Location');
@@ -455,15 +457,15 @@ function getEquipmentListRow(cardData, urlpfx="", serviceStatuses={}, mobileLabe
     
 }
 
-function getEqHistory(data, isOut){
-
-    const color = isOut ? "text-success" : "text-danger" ;
-    const icon = isOut ? "bi-box-arrow-in-up-right" : "bi-box-arrow-in-up-left" ;
+function getEqHistory(data, isOut, teleportLabel = 'Teleport'){
+    const isTeleport = data.isTeleport === 1;
+    const color = isTeleport ? 'eq-history-teleport' : (isOut ? 'text-success text-gradient' : 'text-danger text-gradient');
+    const icon = isTeleport ? 'bi-lightning-charge' : (isOut ? 'bi-box-arrow-in-up-right' : 'bi-box-arrow-in-up-left');
 
     const html = `
           <div class='timeline-block mb-3'>
             <span class='timeline-step'>
-              <i class='bi ${icon} ${color} text-gradient'></i>
+              <i class='bi ${icon} ${color}' aria-hidden='true'></i>
             </span>
             <div class='timeline-content'>
               <h6 class='text-dark text-sm font-weight-bold mb-0'></h6>
@@ -472,13 +474,17 @@ function getEqHistory(data, isOut){
           </div>
     `;
     const $timeline = $(html);
-    $timeline.find('h6').text(data.parentToName ?? '');
-    $timeline.find('p').text(data.time ?? '');
-
-    out = {"html" : $timeline}
-
-    return out
-    
+    const destination = data.parentToName ?? '';
+    const heading = $timeline.find('h6');
+    if (isTeleport) {
+        heading.text(teleportLabel);
+        $('<p>', {class: 'text-dark text-sm mb-0'})
+            .text((data.parentFromName ?? '') + ' → ' + destination).insertAfter(heading);
+    } else {
+        heading.text(destination);
+    }
+    $timeline.find('p').last().text(data.time ?? '');
+    return {html: $timeline};
 }
 
 function getEqTransHistory(data){
@@ -516,6 +522,139 @@ function getLocationHistoryContainer(data, isOut){
 
     return out
     
+}
+
+function readEquipmentFormData(url, req) {
+    return $.ajax({url: url, method: 'POST', data: {req: req}, dataType: 'json'}).then(function(response) {
+        if (response && response.CODE === 200) { return response.DATA; }
+        return $.Deferred().reject(response).promise();
+    });
+}
+
+function setupEquipmentTypeFields(readUrl, actions, buttonId, labels, loadForm) {
+    const primary = $('#type-inp');
+    const secondary = $('#secondary-type-inp');
+    const button = $(document.getElementById(buttonId));
+    const status = $('#equipment-type-status');
+    const retry = $('#equipment-type-retry');
+    let secondaryRequestId = 0;
+    let formValues;
+
+    function showStatus(key, retryAction) {
+        status.text(labels[key] || '');
+        retry.off('click').toggleClass('d-none', !retryAction);
+        if (retryAction) { retry.on('click', retryAction); }
+    }
+
+    function updateField(select) {
+        select.closest('.input-group-outline').toggleClass('is-filled', select.children().length > 0);
+    }
+
+    function updateSubmit() {
+        const waitingForTypes = !formValues?.typeLocked && (primary.prop('disabled') || secondary.prop('disabled'));
+        button.prop('disabled', Boolean(button.data('requestPending')) || waitingForTypes || !primary.val() || !secondary.val());
+    }
+
+    function showFailure(response, retryAction) {
+        if (response && (response.CODE === 401 || response.status === 401)) {
+            redirectToLogin();
+            return;
+        }
+        showStatus('loadError', retryAction);
+    }
+
+    function readOptions(req) {
+        return readEquipmentFormData(readUrl, req).then(function(items) {
+            const ids = new Set();
+            if (!Array.isArray(items) || !items.every(function(item) {
+                if (!item || (typeof item.id !== 'number' && typeof item.id !== 'string') ||
+                    !/^[1-9][0-9]*$/.test(String(item.id)) ||
+                    !Number.isSafeInteger(Number(item.id)) || typeof item.name !== 'string' ||
+                    typeof item.code !== 'string' || ids.has(String(item.id))) { return false; }
+                ids.add(String(item.id));
+                return true;
+            })) { throw new Error('Invalid equipment type options'); }
+            return items;
+        });
+    }
+
+    function populate(select, items, savedId) {
+        const defaultOption = items.find(item => item.code === 'n/a');
+        const preferred = savedId === undefined ? defaultOption?.id : savedId;
+        select.empty().append($('<option>').val('').text(labels.choose));
+        generateSelectOptions(items, select.attr('id'));
+        select.val(items.some(item => String(item.id) === String(preferred)) ? String(preferred) : '');
+        updateField(select);
+    }
+
+    function loadSecondary(savedId) {
+        const requestId = ++secondaryRequestId;
+        const primaryId = primary.val();
+        secondary.empty().prop('disabled', true);
+        updateField(secondary);
+        updateSubmit();
+        if (!primaryId) { showStatus(''); return; }
+
+        const reload = () => loadSecondary(savedId);
+        showStatus('loading');
+        readOptions({MD: actions.secondary, ID: primaryId}).done(function(items) {
+            if (requestId !== secondaryRequestId) { return; }
+            if (!items.length) { showStatus('noSecondary', reload); return; }
+            populate(secondary, items, savedId);
+            secondary.prop('disabled', Boolean(formValues?.typeLocked));
+            showStatus(savedId !== undefined && !secondary.val() ? 'savedUnavailable' : '');
+            updateSubmit();
+        }).fail(function(response) {
+            if (requestId === secondaryRequestId) { showFailure(response, reload); }
+        });
+    }
+
+    function loadPrimary() {
+        primary.empty().prop('disabled', true);
+        secondary.empty().prop('disabled', true);
+        updateSubmit();
+        showStatus('loading');
+        const ready = formValues === undefined ? loadForm().then(function(values) {
+            formValues = values;
+        }) : $.Deferred().resolve().promise();
+        ready.then(() => readOptions({MD: actions.primary})).done(function(items) {
+            if (!items.length) { showStatus('noPrimary', loadPrimary); return; }
+            populate(primary, items, formValues?.typeId);
+            primary.prop('disabled', Boolean(formValues?.typeLocked));
+            if (formValues && !primary.val()) { showStatus('savedUnavailable'); return; }
+            loadSecondary(formValues?.secondaryTypeId);
+        }).fail(function(response) {
+            showFailure(response, loadPrimary);
+        });
+    }
+
+    primary.on('change', function() {
+        if (primary.prop('disabled')) { return; }
+        updateField(primary);
+        loadSecondary();
+    });
+    secondary.on('change', function() {
+        if (secondary.prop('disabled')) { return; }
+        updateField(secondary);
+        showStatus('');
+        updateSubmit();
+    });
+    loadPrimary();
+
+    return function submit(action) {
+        if (button.prop('disabled')) { return null; }
+        primary.add(secondary).prop('disabled', true);
+        const restore = function() {
+            primary.add(secondary).prop('disabled', Boolean(formValues?.typeLocked));
+            updateSubmit();
+        };
+        try {
+            return runButtonAction(button, action).always(restore);
+        } catch (error) {
+            restore();
+            throw error;
+        }
+    };
 }
 
 function generateSelectOptions(selectData, selectorId){
@@ -617,7 +756,7 @@ function getLayoutTransportCard(data, labels, parentName, onOpen) {
     return {card: $card, count: $card.find('.layout-equipment-count'), button: $button};
 }
 
-function getLayoutEquipmentRow(data, typeName, editPrefix, typeLabel='Type') {
+function getLayoutEquipmentRow(data, typeName, editPrefix, typeLabel='Type', teleportAction = null) {
     const $row = $(`
         <tr>
             <td class='px-3 py-2 mobile-list-title'><a class='layout-equipment-name text-sm font-weight-bold'></a><p class='layout-equipment-code text-xs text-secondary mb-0'></p></td>
@@ -632,6 +771,15 @@ function getLayoutEquipmentRow(data, typeName, editPrefix, typeLabel='Type') {
     $row.find('.layout-equipment-code').text(data.code || '');
     $row.find('.layout-equipment-uuid').text(data.uuid || '');
     $row.find('.layout-equipment-type').attr('data-label', typeLabel).text(typeName);
+    if (teleportAction) {
+        const $edit = $('<button>', {type: 'button',
+            class: 'btn btn-outline-secondary btn-sm mb-0 px-2 py-1 layout-teleport-edit',
+            'aria-label': teleportAction.label + ' — ' + (data.name || data.code || data.uuid)})
+            .data('equipmentUuid', data.uuid)
+            .append($('<i>', {class: 'bi bi-pencil', 'aria-hidden': 'true'}))
+            .on('click', function() { teleportAction.open(this); });
+        $('<td>', {class: 'px-3 py-2 text-end layout-teleport-cell'}).append($edit).appendTo($row);
+    }
     return $row;
 }
 

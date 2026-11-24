@@ -13,6 +13,7 @@ $serviceStatuses = array(
     IDConstants::EQ_STATUS_READY => array('className' => 'bg-success', 'label' => Lang::getRsrc('equipmentList', 'serviceReady')),
     IDConstants::EQ_STATUS_NEEDS_SERVICE => array('className' => 'bg-danger', 'label' => Lang::getRsrc('equipmentList', 'serviceNeedsService')),
     IDConstants::EQ_STATUS_IN_SERVICE => array('className' => 'bg-warning', 'label' => Lang::getRsrc('equipmentList', 'serviceInService')),
+    IDConstants::EQ_STATUS_BROKEN => array('className' => 'bg-danger', 'label' => Lang::getRsrc('equipmentService', 'broken')),
     'unknown' => array('className' => 'bg-secondary', 'label' => Lang::getRsrc('equipmentList', 'serviceUnknown')),
 );
 

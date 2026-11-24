@@ -34,7 +34,31 @@ use klr\IDConstants;
 
 		
 
-		switch ($md) {
+        switch ($md) {
+            case AjaxManager::MD_SERVICE_LOCATIONS_GET:
+            case AjaxManager::MD_SERVICE_TYPES_GET:
+                if (!SessionMgmt::isManagerAcl(SessionMgmt::getSyAcl())) { AjaxResponse::error(403); }
+                if ($id !== null && !AjaxResponse::positiveId($id)) { AjaxResponse::error(400); }
+                $result = $md === AjaxManager::MD_SERVICE_LOCATIONS_GET
+                    ? APIRead::getServiceLocations() : APIRead::getServiceTypes($id);
+                $result = AjaxResponse::validateRead($result, true);
+                AjaxResponse::send(200, $result[APIManager::DATA][APIManager::DATA]);
+                break;
+
+            case AjaxManager::MD_SERVICE_OPTIONS_GET:
+                $action = $req['ACTION'] ?? null;
+                if (!AjaxResponse::uuid($element) || !in_array($action, array('drop_off', 'pickup'), true)) {
+                    AjaxResponse::error(400);
+                }
+                $result = AjaxResponse::validateRead(APIRead::getServiceOptions($element, $action), false);
+                AjaxResponse::send(200, $result[APIManager::DATA][APIManager::DATA]);
+                break;
+
+            case AjaxManager::MD_SERVICE_HISTORY_GET:
+                if (!AjaxResponse::uuid($element)) { AjaxResponse::error(400); }
+                $result = AjaxResponse::validateRead(APIRead::getServiceHistory($element), true);
+                AjaxResponse::send(200, $result[APIManager::DATA][APIManager::DATA]);
+                break;
 
         	case AjaxManager::SY_USER_LIST_GET :
 				$res = AjaxResponse::validateRead(APIRead::getUsersList(), true);
@@ -73,7 +97,7 @@ use klr\IDConstants;
 				break;
 
         	case AjaxManager::MD_LOC_AVAILIBLE_GET :
-				$res = AjaxResponse::validateRead(APIRead::getAvailibleRealEstate($sort, $fltr), true);
+				$res = AjaxResponse::validateRead(APIRead::getAvailibleRealEstate($sort, $fltr, ($req['SERVICE'] ?? null) === '1'), true);
 				
 				$data['CODE'] = $res[APIManager::CODE];
 				if ($res[APIManager::CODE] == 200) {
@@ -144,6 +168,36 @@ use klr\IDConstants;
 				} 
 				break;
 
+            case AjaxManager::MD_LOC_TELEPORT_DESTINATIONS_GET :
+                if (!SessionMgmt::isManagerAcl(SessionMgmt::getSyAcl())) { AjaxResponse::error(403); }
+                $res = AjaxResponse::validateRead(APIRead::getTeleportDestinations(), true);
+                $destinations = $res[APIManager::DATA][APIManager::DATA];
+                AjaxResponse::requireFields($destinations, array('id', 'uuid', 'name', 'code', 'typeId'));
+                foreach ($destinations as $destination) {
+                    if (!is_int($destination['id']) || $destination['id'] <= 1 || !AjaxResponse::uuid($destination['uuid'])
+                        || !is_string($destination['name']) || !is_string($destination['code'])
+                        || !in_array($destination['typeId'], array(IDConstants::LOC_TRANSPORT_TYPE,
+                            IDConstants::LOC_CONSTRUCTION_SITE_TYPE, IDConstants::LOC_WAREHOUSE_TYPE), true)) {
+                        AjaxResponse::error(502);
+                    }
+                }
+                AjaxResponse::send(200, $destinations);
+                break;
+
+            case AjaxManager::MD_CHECKLIST_OPTIONS_GET :
+                if (!SessionMgmt::isManagerAcl(SessionMgmt::getSyAcl())) { AjaxResponse::error(403); }
+                if (!AjaxResponse::positiveId($id)) { AjaxResponse::error(400); }
+                $res = AjaxResponse::validateRead(APIRead::getChecklistOptions($id), true);
+                AjaxResponse::send(200, $res[APIManager::DATA][APIManager::DATA]);
+                break;
+
+            case AjaxManager::MD_EQ_SECONDARY_TYPE_LIST_GET :
+                if (!AjaxResponse::positiveId($id)) { AjaxResponse::error(400); }
+                $res = AjaxResponse::validateRead(APIRead::getEqSecondaryTypeList($id), true);
+                $data['CODE'] = $res[APIManager::CODE];
+                $data['DATA'] = $res[APIManager::DATA][APIManager::DATA];
+                break;
+
 			case AjaxManager::MD_LOC_WAREHOUSE_LIST_GET :
 				$res = AjaxResponse::validateRead(APIRead::getActiveWarehouseList(), true);
 				
@@ -212,6 +266,11 @@ use klr\IDConstants;
 					
 					$transitions = $res[APIManager::DATA][APIManager::DATA];
                     AjaxResponse::requireFields($transitions, array('parentFrom','parentFromName','parentFromType','parentTo','parentToName','parentToType','time'));
+                    foreach ($transitions as &$transition) {
+                        if (!array_key_exists('isTeleport', $transition)) { $transition['isTeleport'] = 0; }
+                        elseif (!in_array($transition['isTeleport'], array(0, 1), true)) { AjaxResponse::error(502); }
+                    }
+                    unset($transition);
 
 
 					$history = array();
@@ -228,6 +287,7 @@ use klr\IDConstants;
 						$row["parentToName"] = $curr["parentToName"];
 						$row["parentToType"] = $curr["parentToType"];
 						$row["time"] = $curr["time"];
+						$row["isTeleport"] = $curr["isTeleport"];
 
 						if ($curr["parentToType"] == IDConstants::LOC_TRANSPORT_TYPE){
 
@@ -282,6 +342,7 @@ use klr\IDConstants;
 							"parentToName" => $last["parentToName"],
 							"parentToType" => $last["parentToType"],
 							"time" => $last["time"],
+							"isTeleport" => $last["isTeleport"],
 							"locationHistory" => array(),
 						);
 					}

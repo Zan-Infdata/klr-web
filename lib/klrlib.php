@@ -573,8 +573,9 @@
             if (!is_array($context)) { $context = array(); }
             $endpoints = array('page', 'ajax', 'auth', 'login', 'img',
                 '/V1/auth/login', '/V1/auth/refresh', '/V1/auth/jwt-login',
-                '/V1/eq/active', '/V1/eq/list', '/V1/eq/show', '/V1/eq/types', '/V1/eq/transitions', '/V1/eq/create', '/V1/eq/update', '/V1/eq/take', '/V1/eq/leave',
-                '/V1/loc/availible', '/V1/loc/availible-eq', '/V1/loc/sites', '/V1/loc/warehouses', '/V1/loc/show', '/V1/loc/update',
+                '/V1/checklist/options', '/V1/checklist/create',
+                '/V1/eq/active', '/V1/eq/list', '/V1/eq/show', '/V1/eq/types', '/V1/eq/types-secondary', '/V1/eq/transitions', '/V1/eq/create', '/V1/eq/update', '/V1/eq/take', '/V1/eq/leave', '/V1/eq/teleport',
+                '/V1/loc/availible', '/V1/loc/availible-eq', '/V1/loc/sites', '/V1/loc/warehouses', '/V1/loc/show', '/V1/loc/update', '/V1/loc/teleport-destinations',
                 '/V1/trans/availible', '/V1/trans/list', '/V1/trans/my', '/V1/trans/my-return', '/V1/trans/show', '/V1/trans/transitions', '/V1/trans/create', '/V1/trans/take', '/V1/trans/return', '/V1/trans/move', '/V1/user/list', '/V1/user/get');
             if (isset($context['endpoint']) && in_array($context['endpoint'], $endpoints, true)) { $entry['endpoint'] = $context['endpoint']; }
             foreach (array('status' => 599, 'curl_errno' => 10000, 'elapsed_ms' => 86400000) as $key => $max) {
@@ -681,10 +682,41 @@
             return isset($value['isActive']) && in_array($value['isActive'], array(0, 1, '0', '1'), true);
         }
 
-        public static function mutation($result) {
-            $code = APIManager::mutationStatus($result);
-            if ($code !== 200) { self::error($code, ($result['outcome_unknown'] ?? false) === true); }
+        public static function mutation($result, $successFlag=1) {
+            $code = APIManager::mutationStatus($result, $successFlag);
+            if ($code !== 200) {
+                $unknown = ($result['outcome_unknown'] ?? false) === true
+                    || ($successFlag === 0 && $code === 502 && ($result[APIManager::CODE] ?? null) === 200);
+                self::error($code, $unknown);
+            }
             self::send(200, Lang::getRsrc('ajax', 'alrt0'));
+        }
+
+        public static function serviceLocationRequest($request) {
+            if (!SessionMgmt::isManagerAcl(SessionMgmt::getSyAcl())) { self::error(403); }
+            $element = $request['ELEM'] ?? null;
+            $types = is_string($request['TYPES'] ?? null) ? json_decode($request['TYPES']) : null;
+            if (!self::record($element) || !is_string($element['desc'] ?? null)
+                || !in_array($element['statusId'] ?? null, array('6', '7'), true)
+                || !is_array($types)) { self::error(400); }
+            $element['isActive'] = (int) $element['isActive'];
+            $element['statusId'] = (int) $element['statusId'];
+            return array($element, $types);
+        }
+
+        public static function serviceBatch($result, $count) {
+            $code = $result[APIManager::CODE] ?? 502;
+            if ($code !== 200) {
+                self::error($code, $code >= 500 || ($result['outcome_unknown'] ?? false) === true);
+            }
+            $body = $result[APIManager::DATA] ?? null;
+            $items = $body[APIManager::DATA] ?? null;
+            if (($body[APIManager::ERR] ?? null) !== 0 || !is_array($items) || !array_is_list($items)
+                || count($items) !== $count) { self::error(502, true); }
+            foreach ($items as $item) {
+                if (!in_array($item, array(0, 1), true)) { self::error(502, true); }
+            }
+            self::send(200, $items);
         }
 
         public static function requireFields($items, $fields) {
@@ -1194,6 +1226,7 @@
 		const MD_LOC_TRANS_HISTORY_GET = "MLTHG" ;
 		const MD_LOC_MY_TRANS_GET = "MLMTG" ;
 		const MD_LOC_MY_TRANS_RETURN_GET = "MLMTRG" ;
+		const MD_LOC_TELEPORT_DESTINATIONS_GET = "MLTDG";
 		const MD_LOC_EQ_ON_LOC_GET = "MLEOLG" ;
 		const MD_LOC_WAREHOUSE_LIST_GET = "MlWLG" ;
 		const MD_LOC_SITES_LIST_GET = "MlSLG" ;
@@ -1202,6 +1235,7 @@
 		
 
 		const MD_EQ_TYPE_LIST_GET = "METLG" ;
+		const MD_EQ_SECONDARY_TYPE_LIST_GET = "MESTLG" ;
 		const MD_EQ_LIST_GET = "MELG" ;
 		const MD_EQ_ACTIVE_LIST_GET = "MEALG" ;
 
@@ -1209,8 +1243,20 @@
 		const MD_LOC_TRANS_RETURN = "MLTRT" ;
 		const MD_LOC_TRANS_MOVE = "MLTM" ;
 		const MD_LOC_EQ_TAKE = "MLETK" ;
+		const MD_EQ_TELEPORT = "MET";
 		const MD_LOC_EQ_LEAVE = "MLELE" ;
 		
+        const MD_CHECKLIST_OPTIONS_GET = "MCLOG";
+        const MD_CHECKLIST_CREATE = "MCLC";
+        const MD_SERVICE_LOCATIONS_GET = 'MSLG';
+        const MD_SERVICE_TYPES_GET = 'MSTG';
+        const MD_SERVICE_OPTIONS_GET = 'MSOG';
+        const MD_SERVICE_HISTORY_GET = 'MSHG';
+        const MD_SERVICE_CREATE = 'MSC';
+        const MD_SERVICE_UPDATE = 'MSU';
+        const MD_SERVICE_DROP_OFF = 'MSDO';
+        const MD_SERVICE_COLLECT = 'MSCP';
+
 		const MD_EQ_CREATE = "MEC" ;
 		const MD_TRANS_CREATE = "MTRANSC" ;
 
@@ -1229,6 +1275,10 @@
 		const EQ_STATUS_READY = 1;
 		const EQ_STATUS_NEEDS_SERVICE = 2;
 		const EQ_STATUS_IN_SERVICE = 3;
+        const EQ_STATUS_BROKEN = 4;
+        const LOC_SERVICE_TYPE = 4;
+        const LOC_SERVICE_OPEN = 6;
+        const LOC_SERVICE_CLOSED = 7;
 
 		const USER_ADMIN = 1;
 		const USER_OWNER = 2;
@@ -1271,6 +1321,8 @@
 		const PRNT_TO_KY = 'parent_to';
 		const ID_KY = 'id';
 		const TYPE_KY = 'type';
+		const TYPE_SECONDARY_KY = 'type_secondary';
+		const PRIMARY_TYPE_KY = 'primary_type';
 		const DATE_FROM_KY = 'date_from';
 		const DATE_TO_KY = 'date_to';
 		const AS_USER_KY = 'as_user';
@@ -1466,12 +1518,13 @@
                 $method, $data, null, self::deadline());
         }
 
-        public static function mutationStatus($result) {
+        public static function mutationStatus($result, $successFlag=1) {
             $code = $result[self::CODE] ?? 502;
             if ($code !== 200) { return is_int($code) && $code >= 400 && $code <= 599 ? $code : 502; }
             $data = $result[self::DATA] ?? null;
             if (!is_array($data) || !isset($data[self::ERR]) || !is_int($data[self::ERR])) { return 502; }
-            return $data[self::ERR] === 1 ? 200 : ($data[self::ERR] === 0 ? 409 : 502);
+            if ($data[self::ERR] === $successFlag) { return 200; }
+            return $successFlag === 1 && $data[self::ERR] === 0 ? 409 : 502;
         }
 
 	}
@@ -1483,12 +1536,15 @@
 		const AVAILIBLE_LOC_ENDPOINT = "/V1/loc/availible";
 		const MY_TRANS_ENDPOINT = "/V1/trans/my";
 		const MY_TRANS_RETURN_ENDPOINT = "/V1/trans/my-return";
+		const TELEPORT_DESTINATIONS = "/V1/loc/teleport-destinations";
 		const EQ_ON_LOC = "/V1/loc/availible-eq";
+        const CHECKLIST_OPTIONS = "/V1/checklist/options";
 		const EQ_SHOW = "/V1/eq/show";
 		const EQ_TRANSITIONS = "/V1/eq/transitions";
 		const TRANS_TRANSITIONS = "/V1/trans/transitions";
 		const LOC_SHOW = "/V1/loc/show";
 		const EQ_TYPE_LIST = "/V1/eq/types";
+		const EQ_SECONDARY_TYPE_LIST = "/V1/eq/types-secondary";
 		const ACTIVE_WAREHOUSE_LIST = "/V1/loc/warehouses";
 		const ACTIVE_SITES_LIST = "/V1/loc/sites";
 		const ACTIVE_TRANS_LIST = "/V1/trans/list";
@@ -1498,7 +1554,28 @@
 
 		const GET_USER = "/V1/user/get";
 
-		static function getAvailibleRealEstate($sort, $fltr){
+        static function getChecklistOptions($warehouseId) {
+            return APIManager::callAPIProtected(self::CHECKLIST_OPTIONS, 'GET', array('warehouse_id' => $warehouseId));
+        }
+
+        static function getServiceLocations() {
+            return APIManager::callAPIProtected('/V1/loc/services', 'GET', array());
+        }
+
+        static function getServiceTypes($locationId) {
+            $data = $locationId === null ? array() : array('id' => (int) $locationId);
+            return APIManager::callAPIProtected('/V1/loc/service-types', 'GET', $data);
+        }
+
+        static function getServiceOptions($uuid, $action) {
+            return APIManager::callAPIProtected('/V1/eq/service-options', 'GET', array('transport' => $uuid, 'action' => $action));
+        }
+
+        static function getServiceHistory($uuid) {
+            return APIManager::callAPIProtected('/V1/eq/service-history', 'GET', array(APIManager::ELEM_KY => $uuid));
+        }
+
+		static function getAvailibleRealEstate($sort, $fltr, $includeService = false){
 
 			$data = array(
 				APIManager::RPP_KY => Paging::LIMIT_200,
@@ -1507,6 +1584,7 @@
 				APIManager::FILTER_KY => $fltr
 			);
 
+            if ($includeService) { $data['include_service'] = 1; }
 			$res = APIManager::callAPIProtected(self::AVAILIBLE_LOC_ENDPOINT, "GET", $data);
 			return $res;
 		}
@@ -1536,6 +1614,10 @@
 			return $res;
 		}
 
+		static function getTeleportDestinations(){
+			return APIManager::callAPIProtected(self::TELEPORT_DESTINATIONS, "GET", array());
+		}
+
 		static function getEqOnLoc($element){
 			$data = array (
 				APIManager::ID_KY => $element
@@ -1550,6 +1632,11 @@
 			return $res;
 		}
 		
+		static function getEqSecondaryTypeList($primaryTypeId){
+			$data = array(APIManager::PRIMARY_TYPE_KY => $primaryTypeId);
+			return APIManager::callAPIProtected(self::EQ_SECONDARY_TYPE_LIST, "GET", $data);
+		}
+
 		static function getUsersList(){
 			$data = array();
 			$res = APIManager::callAPIProtected(self::USER_LIST, "GET", $data);
@@ -1643,9 +1730,29 @@
 		const TAKE_TRANS_ENDPOINT = "/V1/trans/take";
 		const RETURN_TRANS_ENDPOINT = "/V1/trans/return";
 		const TAKE_EQ_ENDPOINT = "/V1/eq/take";
+		const TELEPORT_EQ_ENDPOINT = "/V1/eq/teleport";
 		const LEAVE_EQ_ENDPOINT = "/V1/eq/leave";
 		const UPDATE_EQ_ENDPOINT = "/V1/eq/update";
 		const UPDATE_LOC_ENDPOINT = "/V1/loc/update";
+
+        static function updateServiceLocation($element, $secondaryIds) {
+            return APIManager::callAPIProtected('/V1/loc/service-update', 'POST',
+                array(APIManager::ELEM_KY => $element, 'secondary_type_ids' => $secondaryIds));
+        }
+
+        static function transferServiceEquipment($from, $to, $items, $pickup) {
+            $endpoint = $pickup ? '/V1/eq/service-collect-list' : '/V1/eq/service-drop-off-list';
+            return APIManager::callAPIProtected($endpoint, 'POST', array(
+                'parent_from' => $from, 'parent_to' => $to, ($pickup ? 'items' : 'element_list') => $items));
+        }
+
+		static function teleportEquipment($element, $parentFrom, $parentTo){
+			return APIManager::callAPIProtected(self::TELEPORT_EQ_ENDPOINT, "POST", array(
+				APIManager::ELEM_KY => $element,
+				APIManager::PRNT_FROM_KY => $parentFrom,
+				APIManager::PRNT_TO_KY => $parentTo
+			));
+		}
 
 		static function moveTransport($element, $parent_from, $parent_to){
 
@@ -1702,11 +1809,12 @@
 			return $res;
 		}
 
-		static function updateEquipment($element, $type){
+		static function updateEquipment($element, $type, $secondaryType){
 
 			$data = array (
 				APIManager::ELEM_KY => $element,
 				APIManager::TYPE_KY => $type,
+				APIManager::TYPE_SECONDARY_KY => $secondaryType,
 			);
 
 			$res = APIManager::callAPIProtected(self::UPDATE_EQ_ENDPOINT, "POST", $data);
@@ -1730,13 +1838,26 @@
 
 		const CREATE_EQ_ENDPOINT = "/V1/eq/create";
 		const CREATE_TRANS_ENDPOINT = "/V1/trans/create";
+        const CREATE_CHECKLIST_ENDPOINT = "/V1/checklist/create";
+
+        static function createServiceLocation($element, $secondaryIds) {
+            return APIManager::callAPIProtected('/V1/loc/service-create', 'POST',
+                array(APIManager::ELEM_KY => $element, 'secondary_type_ids' => $secondaryIds));
+        }
+
+        static function createChecklist($warehouseId, $assigneeId, $lines) {
+            return APIManager::callAPIProtected(self::CREATE_CHECKLIST_ENDPOINT, 'POST', array(
+                'warehouse_id' => $warehouseId, 'assignee_id' => $assigneeId, 'lines' => $lines,
+            ));
+        }
 		
-		static function createMdEq($element, $parent, $type){
+		static function createMdEq($element, $parent, $type, $secondaryType){
 
 			$data = array (
 				APIManager::ELEM_KY => $element,
 				APIManager::PRNT_TO_KY => $parent,
 				APIManager::TYPE_KY => $type,
+				APIManager::TYPE_SECONDARY_KY => $secondaryType,
 			);
 
 			$res = APIManager::callAPIProtected(self::CREATE_EQ_ENDPOINT, "POST", $data);

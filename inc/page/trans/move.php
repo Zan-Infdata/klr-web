@@ -165,6 +165,10 @@ echo "    const parent = $('#loc-card-container'); ";
 echo "    parent.empty(); ";
 echo "    for (i in data){";
 echo "        const locCard = getLocationCard(data[i], moveToLocationHandler);";
+echo "        if (data[i].typeId === ".\klr\IDConstants::LOC_SERVICE_TYPE.") {";
+echo "          const label = data[i].pickupOnly ? ".\klr\Output::json(\klr\Lang::getRsrc('equipmentService', 'pickupOnly'))." : ".\klr\Output::json(\klr\Lang::getRsrc('equipmentService', 'locationType')).";";
+echo "          $('<div>').addClass('text-sm').text(label).insertBefore(locCard.btn);";
+echo "        }";
 echo "        parent.append(locCard.card); ";
 echo "        locCard.btn.prop('disabled', transportData.parentId == data[i].id); ";
 echo "    }";
@@ -188,6 +192,7 @@ echo "   transportData = data;";
 
 echo "   let req = {};  ";
 echo "   req.MD = '".AjaxManager::MD_LOC_AVAILIBLE_GET."';    ";
+echo "   req.SERVICE = 1; ";
 echo "   req.ELEM = data;    ";
 
 echo "   $.ajax({ ";

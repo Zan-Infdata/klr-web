@@ -170,6 +170,22 @@ echo "           </div> ";
 echo "           <span class='nav-link-text ms-1'>Leave equipment</span> ";
 echo "         </a> ";
 echo "       </li> ";
+echo "<li class='nav-item'><a class='nav-link text-white' href='".Environment::ROOT_URL."/page/service/transfer'>";
+echo "<span class='text-white text-center me-2'><i class='bi bi-tools fs-6' aria-hidden='true'></i></span>";
+echo "<span class='nav-link-text ms-1'>".Output::html(Lang::getRsrc('equipmentService', 'title'))."</span></a></li>";
+if ($canSignInAsUser) {
+    echo "<li class='nav-item'><a class='nav-link text-white' href='".Environment::ROOT_URL."/page/service/setup'>";
+    echo "<span class='text-white text-center me-2'><i class='bi bi-gear fs-6' aria-hidden='true'></i></span>";
+    echo "<span class='nav-link-text ms-1'>".Output::html(Lang::getRsrc('equipmentService', 'setup'))."</span></a></li>";
+    echo "   <li class='nav-item'>";
+    echo "     <a class='nav-link text-white' href='".Environment::ROOT_URL."/".ReqURI::URLMAP_PAGE_KY."/checklist/create'>";
+    echo "       <div class='text-white text-center me-2 d-flex align-items-center justify-content-center'>";
+    echo "         <i class='bi bi-card-checklist fs-6' aria-hidden='true'></i>";
+    echo "       </div>";
+    echo "       <span class='nav-link-text ms-1'>".Output::html(Lang::getRsrc('equipmentChecklist', 'new'))."</span>";
+    echo "     </a>";
+    echo "   </li>";
+}
 echo "       <li class='nav-item mt-3'> ";
 echo "         <h6 class='ps-4 ms-2 text-uppercase text-xs text-white font-weight-bolder opacity-8'>Account pages</h6> ";
 echo "       </li> ";

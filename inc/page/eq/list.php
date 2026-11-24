@@ -20,6 +20,7 @@ $serviceStatuses = array(
     IDConstants::EQ_STATUS_READY => array('className' => 'bg-success', 'label' => Lang::getRsrc('equipmentList', 'serviceReady')),
     IDConstants::EQ_STATUS_NEEDS_SERVICE => array('className' => 'bg-danger', 'label' => Lang::getRsrc('equipmentList', 'serviceNeedsService')),
     IDConstants::EQ_STATUS_IN_SERVICE => array('className' => 'bg-warning', 'label' => Lang::getRsrc('equipmentList', 'serviceInService')),
+    IDConstants::EQ_STATUS_BROKEN => array('className' => 'bg-danger', 'label' => Lang::getRsrc('equipmentService', 'broken')),
     'unknown' => array('className' => 'bg-secondary', 'label' => Lang::getRsrc('equipmentList', 'serviceUnknown')),
 );
 
@@ -89,6 +90,8 @@ echo " <script> ";
 
 echo " let equipmentRows = []; ";
 echo " const equipmentLocationGroups = ".json_encode($locationGroups, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)."; ";
+$filterLabels['serviceType'] = IDConstants::LOC_SERVICE_TYPE;
+$filterLabels['serviceLocation'] = Lang::getRsrc('equipmentService', 'locationType');
 echo " const equipmentServiceStatuses = ".json_encode($serviceStatuses, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)."; ";
 echo " const equipmentFilterLabels = ".json_encode($filterLabels, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)."; ";
 
