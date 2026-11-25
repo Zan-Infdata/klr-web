@@ -16,9 +16,14 @@ foreach (array('originalWarranty', 'noWarranty', 'history', 'noHistory', 'loadEr
 echo "<div class='row'> ";
 echo " <div class='col-xl-4 col-lg-5 col-md-7 d-flex flex-column'> ";
 echo "     <div class='card card-plain'> ";
-echo "         <div class='card-header'> ";
-echo "             <h4 class='font-weight-bolder'>Edit Equipment</h4> ";
-echo "             <p class='mb-0'>".Output::html(ReqURI::getID())."</p> ";
+echo "         <div class='card-header d-flex flex-wrap align-items-start justify-content-between gap-2'> ";
+echo "             <div class='edit-record-heading'> ";
+echo "                 <h4 class='font-weight-bolder'>Edit Equipment</h4> ";
+echo "                 <p class='mb-0'>".Output::html(ReqURI::getID())."</p> ";
+echo "             </div> ";
+echo "             <img id='edit-record-qr' class='edit-record-qr' width='111' height='111' hidden ";
+echo "                  data-qr-url='".Output::html(Environment::ROOT_URL . '/img/qr/show')."' ";
+echo "                  alt='".Output::html(Lang::getRsrc('general', 'qrcode'))."'> ";
 echo "         </div> ";
 echo "         <div class='card-body'> ";
 echo "             <form role='form'> ";
@@ -115,7 +120,10 @@ echo " const equipmentFormReadUrl = ".Output::json($mdReadURL)."; ";
 echo " const equipmentTypeActions = ".Output::json(array('primary' => AjaxManager::MD_EQ_TYPE_LIST_GET, 'secondary' => AjaxManager::MD_EQ_SECONDARY_TYPE_LIST_GET))."; ";
 echo " const equipmentTypeLabels = ".Output::json($typeLabels)."; ";
 echo " function getEquipmentData() { ";
-echo "     return readEquipmentFormData(equipmentFormReadUrl, {MD: '".AjaxManager::MD_EQ_GET."', ELEM: ".Output::json(ReqURI::getID())."}); ";
+echo "     return readEquipmentFormData(equipmentFormReadUrl, {MD: '".AjaxManager::MD_EQ_GET."', ELEM: ".Output::json(ReqURI::getID())."}).then(function(data) { ";
+echo "         showEditRecordQr(document.getElementById('edit-record-qr'), data?.uuid); ";
+echo "         return data; ";
+echo "     }); ";
 echo " } ";
 echo " function loadEquipmentForm() { ";
 echo "     const warehouses = readEquipmentFormData(equipmentFormReadUrl, {MD: '".AjaxManager::MD_LOC_WAREHOUSE_LIST_GET."'}); ";
@@ -224,7 +232,6 @@ echo "   }).fail(function(response) { if (response.status === 401) { redirectToL
 echo " } ";
 
 echo " function fillData(data){";
-
 echo "   $('#code-inp').val(data.code); ";
 echo "   $('#name-inp').val(data.name); ";
 echo "   $('#isActive-inp').prop('checked', data.isActive == 1); ";

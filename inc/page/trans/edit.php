@@ -4,12 +4,18 @@ use klr\AjaxManager;
 use klr\UUID;
 use klr\ReqURI;
 use klr\Output;
+use klr\Lang;
 
 echo " <div class='col-xl-4 col-lg-5 col-md-7 d-flex flex-column'> ";
 echo "     <div class='card card-plain'> ";
-echo "         <div class='card-header'> ";
-echo "             <h4 class='font-weight-bolder'>Edit Equipment</h4> ";
-echo "             <p class='mb-0'>".Output::html(ReqURI::getID())."</p> ";
+echo "         <div class='card-header d-flex flex-wrap align-items-start justify-content-between gap-2'> ";
+echo "             <div class='edit-record-heading'> ";
+echo "                 <h4 class='font-weight-bolder'>Edit Equipment</h4> ";
+echo "                 <p class='mb-0'>".Output::html(ReqURI::getID())."</p> ";
+echo "             </div> ";
+echo "             <img id='edit-record-qr' class='edit-record-qr' width='111' height='111' hidden ";
+echo "                  data-qr-url='".Output::html(Environment::ROOT_URL . '/img/qr/show')."' ";
+echo "                  alt='".Output::html(Lang::getRsrc('general', 'qrcode'))."'> ";
 echo "         </div> ";
 echo "         <div class='card-body'> ";
 echo "             <form role='form'> ";
@@ -94,7 +100,7 @@ echo "      } ";
 
 echo "      function getTransportData() { ";
 echo "        let req = {};  ";
-echo "        req.MD = '".AjaxManager::MD_LOC_GET."';    ";
+echo "        req.MD = '".AjaxManager::MD_TRANS_GET."';    ";
 echo "        req.ELEM = ".Output::json(ReqURI::getID()).";    ";
 
 echo "        $.ajax( {  ";
@@ -154,7 +160,7 @@ echo "    return check;";
 echo " }";
 
 echo " function fillData(data){";
-
+echo "   showEditRecordQr(document.getElementById('edit-record-qr'), data.uuid); ";
 
 echo "   $('#code-inp').val(data.code); ";
 echo "   $('#name-inp').val(data.name); ";

@@ -24,6 +24,16 @@ function redirectToLogin(){
 
 
 
+function showEditRecordQr(image, uuid) {
+    if (typeof uuid !== 'string' || uuid.trim() === '') { return; }
+    const url = new URL(image.dataset.qrUrl, window.location.href);
+    url.searchParams.set('value', uuid);
+    if (!image.hidden && image.src === url.href) { return; }
+    image.hidden = true;
+    image.onload = function() { image.hidden = false; };
+    image.src = url.href;
+}
+
 // Mutations use the legacy API adapter's explicit result, never HTTP success alone.
 function ajaxFailure(response, mutation=false) {
     const code = response && (response.CODE || response.status);

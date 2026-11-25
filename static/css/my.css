@@ -605,6 +605,17 @@ body.sb-nav-fixed {
   color: var(--bs-body-bg) !important;
 }
 
+.edit-record-heading {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.edit-record-qr {
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+
 .equipment-layout .layout-location-icon {
   display: inline-flex;
   align-items: center;

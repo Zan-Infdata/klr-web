@@ -84,6 +84,17 @@ use klr\IDConstants;
 				} 
 				break;
 
+            case AjaxManager::MD_TRANS_GET:
+                if (!is_string($element) || trim($element) === '') { AjaxResponse::error(400); }
+                $result = AjaxResponse::validateRead(APIRead::getTransByUUID($element), false);
+                $transport = $result[APIManager::DATA][APIManager::DATA];
+                if (!in_array($transport['typeId'] ?? null,
+                    array(IDConstants::LOC_TRANSPORT_TYPE, (string) IDConstants::LOC_TRANSPORT_TYPE), true)) {
+                    AjaxResponse::error(404);
+                }
+                AjaxResponse::send(200, $transport);
+                break;
+
         	case AjaxManager::MD_LOC_GET :
 				$res = AjaxResponse::validateRead(APIRead::getLocByUUID($element), false);
 

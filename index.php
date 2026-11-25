@@ -9,10 +9,10 @@
 
     // Apply one explicit policy before starting the PHP session.
     \klr\ReqURI::readURI($_SERVER['REQUEST_URI']);
-    \klr\SessionMgmt::start(!\klr\ReqURI::isRootAuth() && !\klr\ReqURI::isRootAjax());
+    \klr\SessionMgmt::start(!\klr\ReqURI::isRootAuth() && !\klr\ReqURI::isRootAjax() && !\klr\ReqURI::isRootImg());
 
     // Requests queued at a rotated ID must not establish competing sessions or overwrite newer cookies.
-    if (\klr\SessionMgmt::isRotated()) {
+    if (\klr\SessionMgmt::isRotated() && !\klr\ReqURI::isRootImg()) {
         \klr\SessionMgmt::close();
         \klr\Lang::setLangCode(\klr\LangCode::SLO);
         if (str_starts_with(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/ajax/')) { \klr\AjaxResponse::error(401); }

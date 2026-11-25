@@ -2,10 +2,6 @@
 
     use klr\ReqURI;
 
-    require_once "lib/phpqrcode/qrlib.php";
-
-
-
     $pageFile = ReqURI::getIncFileName();
     $pgCheck = file_exists($pageFile);
 

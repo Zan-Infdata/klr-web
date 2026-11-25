@@ -1223,6 +1223,7 @@
 		const MD_EQ_GET = "MEG" ;
 		const MD_EQ_HISTORY_GET = "MEHG" ;
 		const MD_LOC_GET = "MLG" ;
+		const MD_TRANS_GET = "MTG" ;
 		const MD_LOC_TRANS_HISTORY_GET = "MLTHG" ;
 		const MD_LOC_MY_TRANS_GET = "MLMTG" ;
 		const MD_LOC_MY_TRANS_RETURN_GET = "MLMTRG" ;
@@ -1543,6 +1544,7 @@
 		const EQ_TRANSITIONS = "/V1/eq/transitions";
 		const TRANS_TRANSITIONS = "/V1/trans/transitions";
 		const LOC_SHOW = "/V1/loc/show";
+		const TRANS_SHOW = "/V1/trans/show";
 		const EQ_TYPE_LIST = "/V1/eq/types";
 		const EQ_SECONDARY_TYPE_LIST = "/V1/eq/types-secondary";
 		const ACTIVE_WAREHOUSE_LIST = "/V1/loc/warehouses";
@@ -1698,6 +1700,10 @@
 			);
 			$res = APIManager::callAPIProtected(self::LOC_SHOW, "GET", $data);
 			return $res;
+		}
+
+		static function getTransByUUID($element){
+			return APIManager::callAPIProtected(self::TRANS_SHOW, "GET", array(APIManager::ELEM_KY => $element));
 		}
 
 		static function getEqTransitions($element, $dateFrom, $dateTo){
